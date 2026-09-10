@@ -2524,6 +2524,18 @@
             const tapPhim = serverData[index];
             document.querySelectorAll('.ep-btn').forEach((b, i) => b.classList.toggle('active', i === index));
 
+            // Save current watching state for mobile browser refresh / reopen
+            if (currentMovieData && currentMovieData.slug) {
+                try {
+                    localStorage.setItem('cinemax_current_watch', JSON.stringify({
+                        slug: currentMovieData.slug,
+                        source: currentMovieData.source || 'nguonc',
+                        serverIndex: currentServerIndex || 0,
+                        episodeIndex: index
+                    }));
+                } catch(e) {}
+            }
+
             const m3u8Link = tapPhim.link_m3u8 || tapPhim.m3u8 || tapPhim.hls || tapPhim.link || "";
             const embedLink = tapPhim.link_embed || tapPhim.embed || tapPhim.url_embed || tapPhim.iframe || "";
 
@@ -2572,6 +2584,7 @@
 
         function closeVideo() {
             hideModal();
+            try { localStorage.removeItem('cinemax_current_watch'); } catch(e) {}
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
             if (player) { player.stop(); }
             videoIframe.src = "";
@@ -2601,9 +2614,32 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Initial Load
+        function restoreCurrentWatch() {
+            try {
+                const raw = localStorage.getItem('cinemax_current_watch');
+                if (!raw) return false;
+                const watch = JSON.parse(raw);
+                if (watch && watch.slug) {
+                    setTimeout(() => {
+                        playMovie(watch.slug, watch.source || 'nguonc', {
+                            serverIndex: watch.serverIndex || 0,
+                            episodeIndex: watch.episodeIndex || 0
+                        });
+                    }, 200);
+                    return true;
+                }
+            } catch(e) {}
+            return false;
+        }
+
+        // Initial Load & Restore Watching State
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
+            restoreCurrentWatch();
+        });
+
+        window.addEventListener('pageshow', () => {
+            restoreCurrentWatch();
         });
     </script>
 </body>
