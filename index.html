@@ -1251,10 +1251,23 @@
                 --header-h: 62px;
             }
             .header-content {
-                padding: 0 16px;
+                padding: 0 12px;
+                gap: 10px;
+            }
+            .header-left {
+                gap: 12px;
+            }
+            .logo-text {
+                font-size: 20px;
+            }
+            .logo-badge {
+                font-size: 8.5px;
+                padding: 1px 4px;
             }
             .mobile-toggle {
-                display: block;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             .nav-menu {
                 position: fixed;
@@ -1290,33 +1303,56 @@
                 border-radius: var(--radius-md);
             }
             .search-box {
-                width: 160px;
+                width: 150px;
+                padding: 4px 10px;
             }
             .search-box:focus-within {
-                width: 200px;
+                width: 190px;
             }
             #searchResultsBox {
-                width: 300px;
+                width: 290px;
+                right: -10px;
             }
             #heroBanner {
-                height: 65vh;
-                min-height: 480px;
-                padding: 0 20px 40px;
+                height: 55vh;
+                min-height: 420px;
+                padding: 0 16px 28px;
+            }
+            .hero-content {
+                max-width: 100%;
             }
             .hero-title {
-                font-size: 2.2rem;
+                font-size: 1.8rem;
+                line-height: 1.2;
+                margin-bottom: 8px;
+            }
+            .hero-desc {
+                font-size: 13px;
+                line-height: 1.5;
+                -webkit-line-clamp: 2;
+                margin-bottom: 16px;
+            }
+            .hero-actions {
+                gap: 10px;
+            }
+            .btn-primary, .btn-secondary {
+                padding: 9px 18px;
+                font-size: 13px;
             }
             .hero-dots {
-                right: 20px;
-                bottom: 30px;
+                right: 16px;
+                bottom: 20px;
             }
             .container {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 16px 12px;
-                padding: 0 16px;
+                gap: 14px 10px;
+                padding: 0 12px;
             }
             .filter-section, .section-header {
-                padding: 0 16px;
+                padding: 0 12px;
+            }
+            .section-title {
+                font-size: 18px;
             }
             .modal-container {
                 max-height: 100vh;
@@ -1327,26 +1363,64 @@
                 padding: 0;
             }
             .modal-body {
-                padding: 16px;
+                padding: 14px;
+                gap: 16px;
+            }
+            .modal-title {
+                font-size: 20px;
+            }
+            .modal-grid-meta {
+                grid-template-columns: 1fr;
+            }
+            .video-player-wrap {
+                max-height: 35vh;
             }
         }
 
         @media (max-width: 480px) {
+            #heroBanner {
+                height: 50vh;
+                min-height: 380px;
+                padding: 0 14px 20px;
+            }
             .hero-title {
-                font-size: 1.8rem;
+                font-size: 1.5rem;
+            }
+            .hero-tag {
+                font-size: 10.5px;
+                padding: 3px 8px;
+                margin-bottom: 8px;
             }
             .hero-desc {
-                display: none;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                font-size: 12.5px;
+                margin-bottom: 14px;
             }
             .search-box {
-                width: 130px;
-                padding: 5px 10px;
+                width: 125px;
+                padding: 4px 8px;
             }
             .search-box input {
-                font-size: 12px;
+                font-size: 11.5px;
+                padding: 2px 4px;
             }
             #searchResultsBox {
-                width: 280px;
+                width: 260px;
+                right: -20px;
+            }
+            .container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px 8px;
+            }
+            .card-details {
+                padding: 8px;
+            }
+            .card-title {
+                font-size: 12.5px;
+            }
+            .card-sub {
+                font-size: 11px;
             }
         }
     </style>
