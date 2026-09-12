@@ -329,9 +329,8 @@
         .mobile-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            z-index: 998;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 99;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -1245,7 +1244,6 @@
             color: var(--text-main);
         }
 
-        /* RESPONSIVE MOBILE */
         @media (max-width: 900px) {
             :root {
                 --header-h: 62px;
@@ -1256,13 +1254,6 @@
             }
             .header-left {
                 gap: 12px;
-            }
-            .logo-text {
-                font-size: 20px;
-            }
-            .logo-badge {
-                font-size: 8.5px;
-                padding: 1px 4px;
             }
             .mobile-toggle {
                 display: flex;
@@ -1275,16 +1266,16 @@
                 left: -280px;
                 width: 270px;
                 height: 100vh;
-                background: var(--bg-surface);
+                background: #131622;
                 border-right: 1px solid var(--border-color);
                 flex-direction: column;
                 align-items: stretch;
                 padding: 24px 16px;
                 gap: 8px;
-                z-index: 1001;
+                z-index: 99999;
                 overflow-y: auto;
                 transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                box-shadow: 10px 0 30px rgba(0,0,0,0.6);
+                box-shadow: 10px 0 30px rgba(0,0,0,0.8);
             }
             .nav-menu.open {
                 left: 0;
