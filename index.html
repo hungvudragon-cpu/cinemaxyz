@@ -1281,7 +1281,8 @@
                 align-items: stretch;
                 padding: 24px 16px;
                 gap: 8px;
-                z-index: 999;
+                z-index: 1001;
+                overflow-y: auto;
                 transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 box-shadow: 10px 0 30px rgba(0,0,0,0.6);
             }
@@ -2740,6 +2741,23 @@
             } catch(e) {}
             return false;
         }
+
+        // Authentication Gate for 5 friends
+        (function checkAuth() {
+            const VALID_PASS = "123456"; // Đổi mật khẩu của bạn tại đây
+            const STORAGE_KEY = "tahu_access_granted";
+            if (localStorage.getItem(STORAGE_KEY) === "true") return;
+
+            let pass = prompt("Nhập mật khẩu truy cập (Dành cho bạn bè):");
+            while (pass !== VALID_PASS) {
+                if (pass === null) {
+                    document.body.innerHTML = '<div style="color:#fff;text-align:center;padding:100px;font-family:sans-serif;"><h2>Bạn cần nhập mật khẩu để truy cập web phim này.</h2><button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:#ff2a4b;color:#fff;border:none;border-radius:6px;cursor:pointer;">Thử lại</button></div>';
+                    throw new Error("Access denied");
+                }
+                pass = prompt("Mật khẩu không đúng. Vui lòng nhập lại:");
+            }
+            localStorage.setItem(STORAGE_KEY, "true");
+        })();
 
         // Initial Load & Restore Watching State
         document.addEventListener('DOMContentLoaded', () => {
