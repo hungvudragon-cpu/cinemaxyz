@@ -1580,7 +1580,10 @@
                                 <span class="meta-pill" id="detailTime">120 Phút</span>
                             </div>
                         </div>
-                        <div>
+                        <div style="display:flex; gap:8px;">
+                            <button id="modalShareBtn" class="btn-secondary" style="padding:8px 18px; font-size:13px;" onclick="shareCurrentEpisode()">
+                                <span>🔗</span> Chia sẻ link
+                            </button>
                             <button id="modalFavBtn" class="btn-secondary" style="padding:8px 18px; font-size:13px;" onclick="toggleCurrentModalFav()">
                                 <span id="modalFavIcon">🤍</span> Yêu thích
                             </button>
@@ -2218,6 +2221,8 @@
             updateNavUI(btn);
             resetChipsUI();
             toggleMobileMenu(false);
+            updateURLParams({ clear: true });
+            updateURLParams({ type: type });
             loadData(false);
         }
 
@@ -2232,6 +2237,8 @@
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
             if (chipEl) chipEl.classList.add('active');
 
+            updateURLParams({ clear: true });
+            if (cat) updateURLParams({ cat: cat });
             loadData(false);
         }
 
@@ -2254,6 +2261,7 @@
             updateNavUI(document.getElementById('navHome'));
             resetChipsUI();
             toggleMobileMenu(false);
+            updateURLParams({ clear: true });
             loadData(false);
         }
 
@@ -2635,6 +2643,13 @@
                         episodeIndex: index
                     }));
                 } catch(e) {}
+
+                // Sync URL query params for easy sharing & bookmarking
+                updateURLParams({
+                    watch: currentMovieData.slug,
+                    sv: currentServerIndex || 0,
+                    ep: index
+                });
             }
 
             const m3u8Link = tapPhim.link_m3u8 || tapPhim.m3u8 || tapPhim.hls || tapPhim.link || "";
@@ -2683,12 +2698,53 @@
             }
         }
 
+        // URL Parameter Routing & Deep Link Sharing
+        function updateURLParams(params = {}) {
+            const url = new URL(window.location.href);
+            const currentParams = new URLSearchParams(url.search);
+            
+            // If params object contains clear: true, reset search
+            if (params.clear) {
+                url.search = '';
+            } else {
+                Object.keys(params).forEach(key => {
+                    if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+                        currentParams.set(key, params[key]);
+                    } else {
+                        currentParams.delete(key);
+                    }
+                });
+                url.search = currentParams.toString();
+            }
+            window.history.pushState({}, '', url.toString());
+        }
+
+        function shareCurrentEpisode() {
+            if (!currentMovieData || !currentMovieData.slug) return;
+            const shareUrl = new URL(window.location.origin + window.location.pathname);
+            shareUrl.searchParams.set('watch', currentMovieData.slug);
+            if (currentServerIndex > 0) shareUrl.searchParams.set('sv', currentServerIndex);
+            if (currentEpIndex > 0) shareUrl.searchParams.set('ep', currentEpIndex);
+
+            const finalUrl = shareUrl.toString();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(finalUrl).then(() => {
+                    showToast('📋 Đã sao chép link tập phim vào bộ nhớ tạm!');
+                }).catch(() => {
+                    prompt('Link tập phim của bạn:', finalUrl);
+                });
+            } else {
+                prompt('Link tập phim của bạn:', finalUrl);
+            }
+        }
+
         function closeVideo() {
             hideModal();
             try { localStorage.removeItem('cinemax_current_watch'); } catch(e) {}
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
             if (player) { player.stop(); }
             videoIframe.src = "";
+            updateURLParams({ watch: null, sv: null, ep: null });
         }
 
         // Scroll events
@@ -2716,6 +2772,23 @@
         }
 
         function restoreCurrentWatch() {
+            // Check URL Params first for shared links
+            const urlParams = new URLSearchParams(window.location.search);
+            const watchSlug = urlParams.get('watch') || urlParams.get('slug');
+            const svParam = parseInt(urlParams.get('sv') || '0', 10);
+            const epParam = parseInt(urlParams.get('ep') || '0', 10);
+
+            if (watchSlug) {
+                setTimeout(() => {
+                    playMovie(watchSlug, 'nguonc', {
+                        serverIndex: isNaN(svParam) ? 0 : svParam,
+                        episodeIndex: isNaN(epParam) ? 0 : epParam
+                    });
+                }, 200);
+                return true;
+            }
+
+            // Fallback to localStorage session restore
             try {
                 const raw = localStorage.getItem('cinemax_current_watch');
                 if (!raw) return false;
@@ -2732,6 +2805,38 @@
             } catch(e) {}
             return false;
         }
+
+        // Handle Popstate for back/forward browser navigation
+        window.addEventListener('popstate', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const watchSlug = urlParams.get('watch') || urlParams.get('slug');
+            const catParam = urlParams.get('cat') || '';
+            const typeParam = urlParams.get('type') || '';
+            const searchParam = urlParams.get('search') || '';
+
+            if (watchSlug) {
+                const sv = parseInt(urlParams.get('sv') || '0', 10);
+                const ep = parseInt(urlParams.get('ep') || '0', 10);
+                playMovie(watchSlug, 'nguonc', { serverIndex: sv, episodeIndex: ep });
+            } else {
+                const modal = document.getElementById('videoModal');
+                if (modal && modal.classList.contains('show')) {
+                    hideModal();
+                }
+                if (searchParam) {
+                    currentKeyword = searchParam;
+                    loadData(false);
+                } else if (typeParam) {
+                    currentType = typeParam;
+                    loadData(false);
+                } else if (catParam) {
+                    currentCategory = catParam;
+                    loadData(false);
+                } else {
+                    resetToHome();
+                }
+            }
+        });
 
         // Authentication Gate for 5 friends
         (function checkAuth() {
@@ -2752,6 +2857,20 @@
 
         // Initial Load & Restore Watching State
         document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cat = urlParams.get('cat');
+            const type = urlParams.get('type');
+            const search = urlParams.get('search');
+
+            if (search) {
+                currentKeyword = search;
+                document.getElementById('searchInput').value = search;
+            } else if (type) {
+                currentType = type;
+            } else if (cat) {
+                currentCategory = cat;
+            }
+
             loadData();
             restoreCurrentWatch();
         });
