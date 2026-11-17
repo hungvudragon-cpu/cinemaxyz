@@ -72,6 +72,9 @@
                     <button class="nav-btn" id="navHistory">
                         <span>🕒</span> Lịch sử
                     </button>
+                    <button class="nav-btn dice-nav-btn" id="navRandomPicker" title="Hôm nay xem gì?">
+                        <span>🎲</span> Hôm nay xem gì?
+                    </button>
                 </nav>
             </div>
 
@@ -116,18 +119,24 @@
         <div class="hero-dots" id="heroDots"></div>
     </div>
 
-    <!-- QUICK CATEGORY CHIPS -->
+    <!-- Quick Category Chips & Hôm nay xem gì -->
     <div class="filter-section" id="filterSection">
-        <div class="genre-chips" id="genreChips">
-            <button class="chip active" data-category="">Tất cả thể loại</button>
-            <button class="chip" data-category="hanh-dong">Hành Động</button>
-            <button class="chip" data-category="tinh-cam">Tình Cảm</button>
-            <button class="chip" data-category="hai-huoc">Hài Hước</button>
-            <button class="chip" data-category="kinh-di">Kinh Dị</button>
-            <button class="chip" data-category="phieu-luu">Phiêu Lưu</button>
-            <button class="chip" data-category="khoa-hoc-vien-tuong">Viễn Tưởng</button>
-            <button class="chip" data-category="hinh-su">Hình Sự</button>
-            <button class="chip" data-category="vo-thuat">Võ Thuật</button>
+        <div class="genre-chips-wrapper">
+            <div class="genre-chips" id="genreChips">
+                <button class="chip active" data-category="">Tất cả thể loại</button>
+                <button class="chip" data-category="hanh-dong">Hành Động</button>
+                <button class="chip" data-category="tinh-cam">Tình Cảm</button>
+                <button class="chip" data-category="hai-huoc">Hài Hước</button>
+                <button class="chip" data-category="kinh-di">Kinh Dị</button>
+                <button class="chip" data-category="phieu-luu">Phiêu Lưu</button>
+                <button class="chip" data-category="khoa-hoc-vien-tuong">Viễn Tưởng</button>
+                <button class="chip" data-category="hinh-su">Hình Sự</button>
+                <button class="chip" data-category="vo-thuat">Võ Thuật</button>
+            </div>
+            <button class="random-dice-btn" id="randomDiceQuickBtn" title="Hôm nay xem gì? Lắc xúc xắc ngay!">
+                <span class="dice-shake">🎲</span>
+                <span>Hôm Nay Xem Gì?</span>
+            </button>
         </div>
     </div>
 
@@ -182,9 +191,13 @@
                                 <span class="meta-pill" id="detailYear">2024</span>
                                 <span class="meta-pill" id="detailLang">Vietsub</span>
                                 <span class="meta-pill" id="detailTime">120 Phút</span>
+                                <span class="meta-pill tmdb-pill" id="detailTmdbRating" style="display:none;"></span>
                             </div>
                         </div>
-                        <div style="display:flex; gap:8px;">
+                        <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                            <button id="modalTrailerBtn" class="btn-secondary" style="padding:8px 18px; font-size:13px; display:none;">
+                                <span>▶</span> Trailer
+                            </button>
                             <button id="modalShareBtn" class="btn-secondary" style="padding:8px 18px; font-size:13px;">
                                 <span>🔗</span> Chia sẻ link
                             </button>
@@ -200,12 +213,24 @@
                         <button class="btn-text" id="readMoreBtn">Xem thêm ⌄</button>
                     </div>
 
+                    <!-- Diễn viên TMDB kèm Avatar -->
+                    <div class="tmdb-cast-section" id="tmdbCastSection" style="display:none;">
+                        <h4 class="tmdb-section-title">🎭 Diễn Viên Nổi Bật</h4>
+                        <div class="tmdb-cast-list" id="tmdbCastList"></div>
+                    </div>
+
                     <!-- Additional Details -->
                     <div class="modal-grid-meta">
                         <p><strong>Thể loại:</strong> <span id="detailCategory">Đang cập nhật</span></p>
                         <p><strong>Quốc gia:</strong> <span id="detailCountry">Đang cập nhật</span></p>
                         <p><strong>Đạo diễn:</strong> <span id="detailDirector">Đang cập nhật</span></p>
                         <p><strong>Diễn viên:</strong> <span id="detailCast">Đang cập nhật</span></p>
+                    </div>
+
+                    <!-- Phim tương tự TMDB -->
+                    <div class="tmdb-similar-section" id="tmdbSimilarSection" style="display:none;">
+                        <h4 class="tmdb-section-title">✨ Phim Tương Tự Có Thể Bạn Thích</h4>
+                        <div class="tmdb-similar-list" id="tmdbSimilarList"></div>
                     </div>
 
                     <!-- Server and Episode controls -->
@@ -250,6 +275,6 @@
     </footer>
 
     <!-- App JavaScript Entry Point -->
-    <script src="assets/js/app.js"></script>
+    <script type="module" src="assets/js/modules/app.js"></script>
 </body>
 </html>

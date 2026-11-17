@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { storage, showToast, startTransition, endTransition, getSafeImageUrl, extractNames, updateURLParams } from './utils.js';
 import { isFavorite, toggleFavorite, saveToHistory } from './storage.js';
 import { fetchMovieDetail } from './api.js';
+import { getTMDBDetails } from './tmdb.js';
 
 let player = null;
 let hlsInstance = null;
@@ -151,6 +152,9 @@ export async function playMovie(slug, source = CONFIG.SOURCE_NAME, resumeEp = nu
         loading.style.display = 'none';
         content.style.display = 'flex';
 
+        // Gọi dữ liệu từ TMDB để bổ sung Backdrop 4K, Điểm TMDB, Trailer YouTube, Diễn viên kèm ảnh và Phim tương tự
+        loadTMDBEnrichment(movieDetail.name, originalName, movieDetail.year);
+
         const serverContainer = document.getElementById('serverContainer');
         if (globalMovieEpisodes.length > 0) {
             serverContainer.style.display = 'block';
@@ -279,5 +283,81 @@ function playEpisode(index, serverData) {
     } else {
         if (embedLink) useIframe(embedLink);
         else if (m3u8Link) useIframe(`https://player.phimapi.com/v1/?url=${encodeURIComponent(m3u8Link)}`);
+    }
+}
+
+// Làm giàu dữ liệu thông tin phim từ TMDB
+async function loadTMDBEnrichment(title, originalTitle, year) {
+    const tmdbPill = document.getElementById('detailTmdbRating');
+    const trailerBtn = document.getElementById('modalTrailerBtn');
+    const castSection = document.getElementById('tmdbCastSection');
+    const castList = document.getElementById('tmdbCastList');
+    const similarSection = document.getElementById('tmdbSimilarSection');
+    const similarList = document.getElementById('tmdbSimilarList');
+
+    // Reset giao diện TMDB trước khi tải
+    if (tmdbPill) tmdbPill.style.display = 'none';
+    if (trailerBtn) trailerBtn.style.display = 'none';
+    if (castSection) castSection.style.display = 'none';
+    if (similarSection) similarSection.style.display = 'none';
+
+    try {
+        const tmdb = await getTMDBDetails(title, originalTitle, year);
+        if (!tmdb) return;
+
+        // Điểm đánh giá TMDB
+        if (tmdb.voteAverage && tmdbPill) {
+            tmdbPill.innerHTML = `⭐ <strong>${tmdb.voteAverage}</strong>/10 TMDB`;
+            tmdbPill.title = `Dựa trên ${tmdb.voteCount} lượt đánh giá từ người dùng quốc tế TMDB`;
+            tmdbPill.style.display = 'inline-flex';
+        }
+
+        // Trailer YouTube
+        if (tmdb.trailerYoutubeKey && trailerBtn) {
+            trailerBtn.style.display = 'inline-flex';
+            trailerBtn.onclick = () => {
+                window.open(`https://www.youtube.com/watch?v=${tmdb.trailerYoutubeKey}`, '_blank');
+            };
+        }
+
+        // Danh sách diễn viên có Avatar hình ảnh
+        if (tmdb.cast && tmdb.cast.length > 0 && castSection && castList) {
+            castList.innerHTML = tmdb.cast.map(c => `
+                <div class="tmdb-cast-item">
+                    <img class="tmdb-cast-avatar" 
+                         src="${c.profileUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=60'}" 
+                         alt="${c.name}" 
+                         loading="lazy" 
+                         onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=60'">
+                    <span class="tmdb-cast-name">${c.name}</span>
+                    <span class="tmdb-cast-role">${c.character || 'Diễn viên'}</span>
+                </div>
+            `).join('');
+            castSection.style.display = 'block';
+        }
+
+        // Danh sách phim tương tự
+        if (tmdb.similar && tmdb.similar.length > 0 && similarSection && similarList) {
+            similarList.innerHTML = tmdb.similar.map(s => `
+                <div class="tmdb-similar-card" title="Tìm: ${s.title}" onclick="window.triggerSearchMovie('${s.title.replace(/'/g, "\\'")}')">
+                    <img class="tmdb-similar-thumb" 
+                         src="${s.posterUrl || CONFIG.DEFAULT_THUMB}" 
+                         alt="${s.title}" 
+                         loading="lazy"
+                         onerror="this.src='${CONFIG.DEFAULT_THUMB}'">
+                    <div class="tmdb-similar-info">
+                        <span class="tmdb-similar-title">${s.title}</span>
+                        <div class="tmdb-similar-meta">
+                            <span>${s.year || ''}</span>
+                            ${s.rating ? `<span>⭐ ${s.rating}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            similarSection.style.display = 'block';
+        }
+
+    } catch (e) {
+        console.warn('Lỗi hiển thị dữ liệu TMDB:', e);
     }
 }

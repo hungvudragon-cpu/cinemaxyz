@@ -78,8 +78,17 @@ export function saveToHistory(movieData) {
     storage.set(CONFIG.STORAGE_KEYS.HISTORY, history);
 }
 
-export function clearHistoryStorage() {
+export function clearHistory() {
     storage.remove(CONFIG.STORAGE_KEYS.HISTORY);
+}
+
+export function clearHistoryStorage() {
+    clearHistory();
+}
+
+export function removeHistoryItem(slug) {
+    let history = getHistory().filter(item => item.slug !== slug);
+    storage.set(CONFIG.STORAGE_KEYS.HISTORY, history);
 }
 
 export function clearFavoritesStorage() {

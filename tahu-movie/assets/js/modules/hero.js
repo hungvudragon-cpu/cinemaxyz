@@ -1,4 +1,5 @@
 import { getSafeImageUrl } from './utils.js';
+import { getTMDBDetails } from './tmdb.js';
 
 let bannerMovies = [];
 let currentBannerIndex = 0;
@@ -12,6 +13,7 @@ export function initHeroSlider(movies, onPlayMovie) {
     const banner = document.getElementById('heroBanner');
     if (!banner) return;
     banner.style.display = 'flex';
+    document.body.classList.add('hero-active-page');
 
     const dotsContainer = document.getElementById('heroDots');
     dotsContainer.innerHTML = '';
@@ -35,6 +37,7 @@ export function hideHeroBanner() {
     if (bannerInterval) clearInterval(bannerInterval);
     const banner = document.getElementById('heroBanner');
     if (banner) banner.style.display = 'none';
+    document.body.classList.remove('hero-active-page');
 }
 
 async function updateHeroBannerDisplay(index) {
@@ -74,7 +77,15 @@ async function updateHeroBannerDisplay(index) {
             const res = await fetch(`https://phim.nguonc.com/api/film/${movie.slug}`);
             const data = await res.json();
             const detail = data.movie || data.item || {};
-            const betterImg = detail.poster_url || detail.thumb_url || bgUrl;
+            let betterImg = detail.poster_url || detail.thumb_url || bgUrl;
+            
+            // Tìm ảnh backdrop 4K từ TMDB để Hero Banner hiển thị sắc nét nhất
+            try {
+                const tmdb = await getTMDBDetails(movie.name, detail.original_name || movie.original_name, movie.year);
+                if (tmdb?.backdrop4k) {
+                    betterImg = tmdb.backdrop4k;
+                }
+            } catch (err) {}
             
             const tmp = document.createElement("div");
             tmp.innerHTML = detail.content || detail.description || "Chưa có thông tin mô tả cho bộ phim này.";

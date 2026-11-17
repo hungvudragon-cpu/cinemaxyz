@@ -100,3 +100,43 @@ export function hideSkeleton() {
     const container = document.getElementById('skeletonContainer');
     if (container) container.style.display = 'none';
 }
+
+// Export các hàm bổ trợ cho app.js
+export function renderMovieCards(container, movies, isAppend = false, onPlayMovie = null) {
+    if (!container) return;
+    if (!isAppend) container.innerHTML = '';
+    movies.forEach(movie => {
+        container.appendChild(createMovieCard(movie, (m) => {
+            if (onPlayMovie) onPlayMovie(m.slug, m.source);
+        }));
+    });
+}
+
+export function renderSkeleton(container, count = 10) {
+    if (!container) return;
+    showSkeleton();
+}
+
+export function updateSectionTitle(title, actionHtml = '') {
+    const titleEl = document.getElementById('currentSectionTitle');
+    const actionEl = document.getElementById('sectionActionArea');
+    if (titleEl) titleEl.innerText = title;
+    if (actionEl) actionEl.innerHTML = actionHtml;
+}
+
+export function toggleMobileMenu(open) {
+    const menu = document.getElementById('navMenu');
+    const overlay = document.getElementById('mobileOverlay');
+    const top = document.getElementById('mobileMenuTop');
+    if (open) {
+        menu?.classList.add('open');
+        overlay?.classList.add('active');
+        if (top) top.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } else {
+        menu?.classList.remove('open');
+        overlay?.classList.remove('active');
+        if (top) top.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
