@@ -6,6 +6,8 @@ import { initHeroSlider, hideHeroBanner } from './hero.js';
 import { playMovie, closeVideo, toggleDescription, toggleCurrentModalFav, shareCurrentEpisode } from './player.js';
 import { getFavorites, getHistory, clearHistory, removeHistoryItem } from './storage.js';
 import { initRandomPicker, openRandomModal } from './randomPicker.js';
+import { hybridSearchService } from './hybridSearch.js';
+import { highlightMatch } from './smartSearch.js';
 
 // State quản lý toàn bộ trang
 export const state = {
@@ -266,74 +268,280 @@ function setupSearch() {
     const input = document.getElementById('searchInput');
     const clearBtn = document.getElementById('searchClearBtn');
     const resultsBox = document.getElementById('searchResultsBox');
+    if (!input || !resultsBox) return;
 
     let debounceTimer = null;
+    let selectedIndex = -1; // Hỗ trợ điều hướng bằng phím mũi tên
 
-    input?.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        clearBtn.style.display = val ? 'block' : 'none';
+    // Hiển thị lịch sử tìm kiếm khi ô input trống
+    const renderRecentSearches = () => {
+        const recents = hybridSearchService.loadRecentSearches();
+        selectedIndex = -1;
 
-        if (debounceTimer) clearTimeout(debounceTimer);
-        if (!val) {
+        if (recents.length === 0) {
             resultsBox.classList.remove('show');
             resultsBox.innerHTML = '';
             return;
         }
 
-        debounceTimer = setTimeout(async () => {
-            try {
-                const results = await searchMovies(val, 1, 6);
-                if (results.length > 0) {
-                    resultsBox.innerHTML = results.map(m => `
-                        <div class="search-result-item" data-slug="${m.slug}">
-                            <img class="search-item-thumb" src="${m.thumb_url || m.poster_url || CONFIG.DEFAULT_THUMB}" alt="${m.name}" onerror="this.src='${CONFIG.DEFAULT_THUMB}'">
-                            <div class="search-item-info">
-                                <div class="search-item-title">${m.name}</div>
-                                <div class="search-item-meta">${m.year || '2024'} • ${m.quality || m.episode_current || 'HD'}</div>
-                            </div>
-                        </div>
-                    `).join('');
-                    resultsBox.classList.add('show');
+        resultsBox.innerHTML = `
+            <div class="search-group-header">
+                <span>🕒 Tìm kiếm gần đây</span>
+                <button class="search-clear-history-btn" id="clearAllSearchHistory">Xóa tất cả</button>
+            </div>
+            ${recents.map((item, idx) => `
+                <div class="recent-item" data-keyword="${item.replace(/"/g, '&quot;')}" data-index="${idx}">
+                    <div class="recent-item-left">
+                        <span style="opacity:0.6;">🔍</span>
+                        <span>${item}</span>
+                    </div>
+                    <button class="recent-item-remove" data-remove="${item.replace(/"/g, '&quot;')}" title="Xóa">&times;</button>
+                </div>
+            `).join('')}
+        `;
+        resultsBox.classList.add('show');
 
-                    resultsBox.querySelectorAll('.search-result-item').forEach(item => {
-                        item.addEventListener('click', () => {
-                            const slug = item.getAttribute('data-slug');
-                            resultsBox.classList.remove('show');
-                            playMovie(slug);
-                        });
-                    });
-                } else {
-                    resultsBox.innerHTML = `<div style="padding: 14px; text-align: center; color: var(--text-sub); font-size: 13px;">Không tìm thấy phim phù hợp</div>`;
-                    resultsBox.classList.add('show');
-                }
-            } catch(e) {}
-        }, 350);
-    });
+        // Bắt onmousedown để không bị blur input
+        resultsBox.querySelectorAll('.recent-item').forEach(el => {
+            el.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.recent-item-remove')) return;
+                const kw = el.getAttribute('data-keyword');
+                input.value = kw;
+                clearBtn.style.display = 'block';
+                hybridSearchService.saveRecentSearch(kw);
+                triggerMainSearch(kw);
+            });
+        });
 
-    clearBtn?.addEventListener('click', () => {
-        input.value = '';
-        clearBtn.style.display = 'none';
-        resultsBox.classList.remove('show');
-        resetToHome();
-    });
+        resultsBox.querySelectorAll('.recent-item-remove').forEach(btn => {
+            btn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                const kw = btn.getAttribute('data-remove');
+                hybridSearchService.removeRecentSearch(kw);
+                renderRecentSearches();
+            });
+        });
 
-    input?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const val = input.value.trim();
-            if (val) {
-                resultsBox.classList.remove('show');
-                state.currentKeyword = val;
-                state.currentPage = 1;
-                state.hasMoreData = true;
-                updateURLParams({ search: val, cat: null, type: null });
-                loadData();
+        document.getElementById('clearAllSearchHistory')?.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            hybridSearchService.clearRecentSearches();
+            resultsBox.classList.remove('show');
+        });
+    };
+
+    // Render danh sách kết quả tìm kiếm trực tiếp
+    const renderSearchResults = ({ items, didYouMean, isPendingApi, query }) => {
+        selectedIndex = -1;
+
+        if (!items || items.length === 0) {
+            if (isPendingApi) {
+                resultsBox.innerHTML = `
+                    <div class="search-status-bar">
+                        <div class="search-spinner"></div>
+                        <span>Đang tìm kiếm thông minh...</span>
+                    </div>
+                `;
+                resultsBox.classList.add('show');
+                return;
             }
+
+            resultsBox.innerHTML = `
+                <div class="search-status-bar">
+                    <span>🎬 Không tìm thấy phim phù hợp với "<strong>${query}</strong>"</span>
+                </div>
+            `;
+            resultsBox.classList.add('show');
+            return;
+        }
+
+        let html = '';
+
+        // Hiển thị gợi ý "Có phải bạn muốn tìm..." nếu gõ sai chính tả
+        if (didYouMean && didYouMean.toLowerCase() !== query.toLowerCase()) {
+            html += `
+                <div class="search-did-you-mean">
+                    <span>💡 Có phải bạn muốn tìm:</span>
+                    <strong id="didYouMeanAction" data-suggest="${didYouMean.replace(/"/g, '&quot;')}">${didYouMean}</strong>
+                </div>
+            `;
+        }
+
+        html += `
+            <div class="search-group-header">
+                <span>Kết quả gợi ý (${items.length})</span>
+                ${isPendingApi ? '<div class="search-spinner" title="Đang mở rộng tìm kiếm..."></div>' : ''}
+            </div>
+        `;
+
+        html += items.map((m, idx) => {
+            const highlightedTitle = highlightMatch(m.name, query);
+            const highlightedOrig = m.original_name ? highlightMatch(m.original_name, query) : '';
+            const thumb = m.thumb_url || CONFIG.DEFAULT_THUMB;
+
+            return `
+                <div class="search-result-item" data-slug="${m.slug}" data-name="${m.name.replace(/"/g, '&quot;')}" data-index="${idx}">
+                    <img class="search-item-thumb" src="${thumb}" alt="${m.name}" loading="lazy" onerror="this.src='${CONFIG.DEFAULT_THUMB}'">
+                    <div class="search-item-info">
+                        <div class="search-item-title">${highlightedTitle}</div>
+                        ${highlightedOrig ? `<div class="search-item-orig">${highlightedOrig}</div>` : ''}
+                        <div class="search-item-meta">
+                            <span>${m.year || '2024'}</span>
+                            <span>•</span>
+                            <span class="search-badge-quality">${m.quality || 'HD'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        resultsBox.innerHTML = html;
+        resultsBox.classList.add('show');
+
+        // Bắt sự kiện click chọn phim dùng onmousedown để thực thi trước onblur
+        resultsBox.querySelectorAll('.search-result-item').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                const slug = el.getAttribute('data-slug');
+                const name = el.getAttribute('data-name');
+                if (name) hybridSearchService.saveRecentSearch(name);
+                resultsBox.classList.remove('show');
+                playMovie(slug);
+            });
+        });
+
+        // Click vào "Có phải bạn muốn tìm..."
+        document.getElementById('didYouMeanAction')?.addEventListener('mousedown', (e) => {
+            const suggested = e.currentTarget.getAttribute('data-suggest');
+            input.value = suggested;
+            clearBtn.style.display = 'block';
+            hybridSearchService.saveRecentSearch(suggested);
+            triggerMainSearch(suggested);
+        });
+    };
+
+    // Hàm gọi tìm kiếm chính trang chủ
+    const triggerMainSearch = (keyword) => {
+        resultsBox.classList.remove('show');
+        state.currentKeyword = keyword;
+        state.currentPage = 1;
+        state.hasMoreData = true;
+        updateURLParams({ search: keyword, cat: null, type: null });
+        loadData();
+    };
+
+    // Khi focus vào ô input: nếu trống thì hiện 5 lịch sử gần đây, nếu có chữ thì tìm lại
+    input.addEventListener('focus', () => {
+        const val = input.value.trim();
+        if (!val) {
+            renderRecentSearches();
+        } else {
+            hybridSearchService.executeHybridSearch(val, {
+                onInstantResult: (res) => renderSearchResults({ ...res, query: val }),
+                onFinalResult: (res) => renderSearchResults({ ...res, query: val })
+            });
         }
     });
 
+    // Khi gõ phím: Xử lý Tìm kiếm Lai 2 Tầng tức thì
+    input.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        clearBtn.style.display = val ? 'block' : 'none';
+
+        if (!val) {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            renderRecentSearches();
+            return;
+        }
+
+        // TẦNG 1: Lọc tức thì trên Local Pool (< 10ms)
+        hybridSearchService.executeHybridSearch(val, {
+            onInstantResult: (instantRes) => {
+                renderSearchResults({ ...instantRes, query: val });
+            }
+        });
+
+        // TẦNG 2: Debounce 400ms gọi API Fallback an toàn nếu cần thêm dữ liệu
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            hybridSearchService.executeHybridSearch(val, {
+                onFinalResult: (finalRes) => {
+                    renderSearchResults({ ...finalRes, query: val });
+                }
+            });
+        }, 400);
+    });
+
+    // Nút xóa chữ trong ô tìm kiếm
+    clearBtn?.addEventListener('click', () => {
+        input.value = '';
+        clearBtn.style.display = 'none';
+        renderRecentSearches();
+        resetToHome();
+    });
+
+    // Hỗ trợ phím mũi tên Lên/Xuống + Enter
+    input.addEventListener('keydown', (e) => {
+        const items = resultsBox.querySelectorAll('.search-result-item, .recent-item');
+        if (items.length === 0 || !resultsBox.classList.contains('show')) {
+            if (e.key === 'Enter') {
+                const val = input.value.trim();
+                if (val) {
+                    hybridSearchService.saveRecentSearch(val);
+                    triggerMainSearch(val);
+                }
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = (selectedIndex + 1) % items.length;
+            updateActiveSearchItem(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+            updateActiveSearchItem(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && items[selectedIndex]) {
+                const selected = items[selectedIndex];
+                if (selected.classList.contains('search-result-item')) {
+                    const slug = selected.getAttribute('data-slug');
+                    const name = selected.getAttribute('data-name');
+                    if (name) hybridSearchService.saveRecentSearch(name);
+                    resultsBox.classList.remove('show');
+                    playMovie(slug);
+                } else if (selected.classList.contains('recent-item')) {
+                    const kw = selected.getAttribute('data-keyword');
+                    input.value = kw;
+                    clearBtn.style.display = 'block';
+                    hybridSearchService.saveRecentSearch(kw);
+                    triggerMainSearch(kw);
+                }
+            } else {
+                const val = input.value.trim();
+                if (val) {
+                    hybridSearchService.saveRecentSearch(val);
+                    triggerMainSearch(val);
+                }
+            }
+        } else if (e.key === 'Escape') {
+            resultsBox.classList.remove('show');
+        }
+    });
+
+    function updateActiveSearchItem(items) {
+        items.forEach((item, idx) => {
+            item.classList.toggle('active', idx === selectedIndex);
+            if (idx === selectedIndex) {
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        });
+    }
+
+    // Đóng dropdown khi click ra ngoài container
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-container')) {
-            resultsBox?.classList.remove('show');
+            resultsBox.classList.remove('show');
         }
     });
 }
@@ -425,6 +633,7 @@ function restoreCurrentWatch() {
 function initApp() {
     initRandomPicker();
     setupEventListeners();
+    hybridSearchService.initLocalPool(); // Tự động nạp trước Local Movie Pool (Page 1 & 2)
 
     try {
         const urlParams = new URLSearchParams(window.location.search);

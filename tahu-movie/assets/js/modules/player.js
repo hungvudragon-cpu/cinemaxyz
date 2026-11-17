@@ -245,20 +245,18 @@ function playEpisode(index, serverData) {
     if (player) { player.stop(); }
     if (videoIframe) videoIframe.src = "";
 
-    const playerMode = document.getElementById('playerModeSelect')?.value || 'iframe';
-
-    const useIframe = (url) => {
+    // Phát video qua nguồn Embed iFrame chuẩn của nhà cung cấp
+    if (embedLink) {
         if (plyrWrapper) plyrWrapper.style.display = 'none';
         if (videoIframe) {
             videoIframe.style.display = 'block';
-            videoIframe.src = url;
+            videoIframe.src = embedLink;
         }
-    };
-
-    const useHls = (url) => {
-        if (plyrWrapper) plyrWrapper.style.display = 'block';
-        if (videoIframe) videoIframe.style.display = 'none';
+    } else if (m3u8Link) {
+        // Fallback phát m3u8
         if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            if (plyrWrapper) plyrWrapper.style.display = 'block';
+            if (videoIframe) videoIframe.style.display = 'none';
             hlsInstance = new Hls({
                 maxBufferLength: 10,
                 maxMaxBufferLength: 20,
@@ -267,22 +265,16 @@ function playEpisode(index, serverData) {
                 fragLoadingTimeOut: 6000,
                 manifestLoadingTimeOut: 6000
             });
-            hlsInstance.loadSource(url);
+            hlsInstance.loadSource(m3u8Link);
             hlsInstance.attachMedia(videoPlayer);
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                player.play().catch(() => {});
+                player?.play()?.catch(() => {});
             });
-        } else if (videoPlayer && videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-            videoPlayer.src = url;
+        } else if (videoIframe) {
+            if (plyrWrapper) plyrWrapper.style.display = 'none';
+            videoIframe.style.display = 'block';
+            videoIframe.src = `https://player.phimapi.com/v1/?url=${encodeURIComponent(m3u8Link)}`;
         }
-    };
-
-    if (playerMode === 'hls') {
-        if (m3u8Link) useHls(m3u8Link);
-        else if (embedLink) useIframe(embedLink);
-    } else {
-        if (embedLink) useIframe(embedLink);
-        else if (m3u8Link) useIframe(`https://player.phimapi.com/v1/?url=${encodeURIComponent(m3u8Link)}`);
     }
 }
 

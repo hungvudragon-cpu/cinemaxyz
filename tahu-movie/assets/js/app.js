@@ -773,17 +773,13 @@ function playEpisode(index, serverData) {
     if (player) { player.stop(); }
     if (videoIframe) videoIframe.src = "";
 
-    const playerMode = document.getElementById('playerModeSelect')?.value || 'iframe';
-
-    const useIframe = (url) => {
+    if (embedLink) {
         if (plyrWrapper) plyrWrapper.style.display = 'none';
         if (videoIframe) {
             videoIframe.style.display = 'block';
-            videoIframe.src = url;
+            videoIframe.src = embedLink;
         }
-    };
-
-    const useHls = (url) => {
+    } else if (m3u8Link) {
         if (plyrWrapper) plyrWrapper.style.display = 'block';
         if (videoIframe) videoIframe.style.display = 'none';
         if (typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -795,22 +791,14 @@ function playEpisode(index, serverData) {
                 fragLoadingTimeOut: 6000,
                 manifestLoadingTimeOut: 6000
             });
-            hlsInstance.loadSource(url);
+            hlsInstance.loadSource(m3u8Link);
             hlsInstance.attachMedia(videoPlayer);
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
                 player.play().catch(() => {});
             });
         } else if (videoPlayer && videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-            videoPlayer.src = url;
+            videoPlayer.src = m3u8Link;
         }
-    };
-
-    if (playerMode === 'hls') {
-        if (m3u8Link) useHls(m3u8Link);
-        else if (embedLink) useIframe(embedLink);
-    } else {
-        if (embedLink) useIframe(embedLink);
-        else if (m3u8Link) useIframe(`https://player.phimapi.com/v1/?url=${encodeURIComponent(m3u8Link)}`);
     }
 }
 
