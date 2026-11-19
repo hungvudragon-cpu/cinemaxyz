@@ -200,14 +200,19 @@ export function toggleMobileMenu(open) {
     const menu = document.getElementById('navMenu');
     const overlay = document.getElementById('mobileOverlay');
     const top = document.getElementById('mobileMenuTop');
+    const header = document.getElementById('mainHeader');
     if (open) {
         menu?.classList.add('open');
         overlay?.classList.add('active');
+        header?.classList.add('menu-open');
+        document.body.classList.add('menu-open');
         if (top) top.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     } else {
         menu?.classList.remove('open');
         overlay?.classList.remove('active');
+        header?.classList.remove('menu-open');
+        document.body.classList.remove('menu-open');
         if (top) top.style.display = 'none';
         document.body.style.overflow = '';
     }

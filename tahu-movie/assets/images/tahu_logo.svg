@@ -1,0 +1,81 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Background Gradient: Obsidian Cinema Velvet -->
+    <linearGradient id="tahu_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1E2E"/>
+      <stop offset="60%" stop-color="#0E111A"/>
+      <stop offset="100%" stop-color="#06070B"/>
+    </linearGradient>
+
+    <!-- Border Glow Gradient -->
+    <linearGradient id="tahu_border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.35)"/>
+      <stop offset="40%" stop-color="rgba(255, 42, 54, 0.5)"/>
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0.05)"/>
+    </linearGradient>
+
+    <!-- Primary Cinema Red Gradient -->
+    <linearGradient id="tahu_red_top" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF3843"/>
+      <stop offset="45%" stop-color="#E50914"/>
+      <stop offset="100%" stop-color="#A8050D"/>
+    </linearGradient>
+
+    <linearGradient id="tahu_red_stem" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E50914"/>
+      <stop offset="65%" stop-color="#9E050D"/>
+      <stop offset="100%" stop-color="#5A0005"/>
+    </linearGradient>
+
+    <!-- 3D Play Ribbon Gradient -->
+    <linearGradient id="tahu_play_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="35%" stop-color="#FFF0F2"/>
+      <stop offset="100%" stop-color="#FF4D58"/>
+    </linearGradient>
+
+    <!-- Glass Reflection -->
+    <linearGradient id="glass_shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.18)"/>
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0)"/>
+    </linearGradient>
+
+    <!-- Neon Drop Shadow Filter -->
+    <filter id="cinema_glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#E50914" flood-opacity="0.65"/>
+    </filter>
+    <filter id="play_glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#FFFFFF" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Base Icon Card (Squircle) -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#tahu_bg)" stroke="url(#tahu_border)" stroke-width="1.6"/>
+
+  <!-- Upper Glass Sheen -->
+  <path d="M4 18 C4 10.3 10.3 4 18 4 H46 C53.7 4 60 10.3 60 18 V26 C45 32 19 32 4 26 Z" fill="url(#glass_shine)"/>
+
+  <!-- Iconic Monogram: Stylized Cinematic T with Dynamic Play -->
+  <g filter="url(#cinema_glow)">
+    <!-- T Horizontal Wing -->
+    <path d="M12 15 C12 13.9 12.9 13 14 13 H50 C51.1 13 52 13.9 52 15 V20.5 C52 21.6 51.1 22.5 50 22.5 H14 C12.9 22.5 12 21.6 12 20.5 Z" fill="url(#tahu_red_top)"/>
+
+    <!-- T Wing Upper Specular Edge -->
+    <path d="M14 13.5 H50" stroke="rgba(255,255,255,0.4)" stroke-width="0.8" stroke-linecap="round"/>
+
+    <!-- T Vertical Stem -->
+    <path d="M26 22.5 H38 V48 C38 49.7 36.7 51 35 51 H29 C27.3 51 26 49.7 26 48 Z" fill="url(#tahu_red_stem)"/>
+
+    <!-- Stem Bevel (3D shading) -->
+    <path d="M34 22.5 H38 V48 C38 49.7 36.7 51 35 51 H34 Z" fill="rgba(0, 0, 0, 0.3)"/>
+    <path d="M26 22.5 H28 V48 C28 49.7 27.3 51 26 51 Z" fill="rgba(255, 255, 255, 0.15)"/>
+
+    <!-- Glowing 3D Play Gem nested in T -->
+    <g filter="url(#play_glow)">
+      <!-- Main Play Triangle with smooth rounded vertices -->
+      <path d="M30 25.8 C30 24.3 31.7 23.4 33 24.2 L47.4 33.4 C48.6 34.2 48.6 35.8 47.4 36.6 L33 45.8 C31.7 46.6 30 45.7 30 44.2 Z" fill="url(#tahu_play_grad)"/>
+      <!-- Inner facet shine -->
+      <polygon points="32,27 43,35 32,38" fill="#FFFFFF" opacity="0.75"/>
+    </g>
+  </g>
+</svg>
