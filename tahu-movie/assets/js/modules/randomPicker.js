@@ -1,7 +1,8 @@
 ﻿import { fetchMovieList, fetchMovieDetail } from './api.js';
 import { getTMDBDetails } from './tmdb.js';
 import { playMovie } from './player.js';
-import { showToast } from './utils.js';
+import { showToast, getSafeImageUrl } from './utils.js';
+import { CONFIG } from './config.js';
 
 const GENRE_LIST = [
     { id: '', name: 'Mọi thể loại' },
@@ -188,41 +189,58 @@ async function handleRoll() {
 }
 
 function renderLuckyCard(container, movie, tmdb) {
-    const backdrop = tmdb?.backdrop4k || tmdb?.posterHd || movie.thumb_url || movie.poster_url;
+    const posterUrl = tmdb?.posterHd || movie.poster_url || movie.thumb_url || movie.image || CONFIG.DEFAULT_THUMB;
+    const backdrop = tmdb?.backdrop4k || movie.thumb_url || movie.poster_url || posterUrl;
     const rating = tmdb?.voteAverage ? `${tmdb.voteAverage}/10 TMDB` : `Phổ Biến`;
     const year = movie.year || (movie.created ? movie.created.substring(0, 4) : '2026');
     const quality = movie.quality || movie.episode_current || 'FHD';
+    const lang = movie.lang || movie.language || 'Vietsub';
     const desc = tmdb?.overview || movie.description || movie.content || 'Một siêu phẩm điện ảnh dành riêng cho bạn hôm nay!';
-    const cleanDesc = desc.replace(/<[^>]*>/g, '').slice(0, 180) + '...';
+    const cleanDesc = desc.replace(/<[^>]*>/g, '').slice(0, 190) + '...';
 
     container.innerHTML = `
         <div class="lucky-card-bg" style="background-image: url('${backdrop}')"></div>
-        <div class="lucky-card-content">
-            <div class="lucky-badge-row">
-                <span class="lucky-badge lucky-pill">${quality}</span>
-                <span class="lucky-badge">${year}</span>
-                <span class="lucky-badge rating">⭐ ${rating}</span>
+        <div class="lucky-card-grid">
+            <div class="lucky-poster-wrap" title="Nhấn để xem giới thiệu phim: ${movie.name}">
+                <img class="lucky-poster-img" src="${posterUrl}" alt="${movie.name}" loading="lazy" onerror="this.onerror=null; this.src='${CONFIG.DEFAULT_THUMB}'">
+                <span class="lucky-poster-badge">${quality}</span>
+                <div class="lucky-poster-overlay">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="#ffffff"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                </div>
             </div>
-            <h3 class="lucky-title">${movie.name}</h3>
-            ${movie.original_name ? `<div class="lucky-orig-title">${movie.original_name}</div>` : ''}
-            <p class="lucky-desc">${cleanDesc}</p>
-            <div class="lucky-actions">
-                <button class="btn-primary lucky-play-btn" id="luckyPlayBtn">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    <span>Xem Ngay Phim Này</span>
-                </button>
-                ${tmdb?.trailerYoutubeKey ? `
-                    <button class="btn-secondary lucky-trailer-btn" id="luckyTrailerBtn" data-key="${tmdb.trailerYoutubeKey}">
-                        <span>Xem Trailer</span>
+            <div class="lucky-card-content">
+                <div class="lucky-badge-row">
+                    <span class="lucky-badge lucky-pill">${quality}</span>
+                    <span class="lucky-badge">${year}</span>
+                    <span class="lucky-badge">${lang}</span>
+                    <span class="lucky-badge rating">⭐ ${rating}</span>
+                </div>
+                <h3 class="lucky-title">${movie.name}</h3>
+                ${movie.original_name ? `<div class="lucky-orig-title">${movie.original_name}</div>` : ''}
+                <p class="lucky-desc">${cleanDesc}</p>
+                <div class="lucky-actions">
+                    <button class="btn-primary lucky-play-btn" id="luckyPlayBtn">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                        <span>Xem Giới Thiệu Phim</span>
                     </button>
-                ` : ''}
+                    ${tmdb?.trailerYoutubeKey ? `
+                        <button class="btn-secondary lucky-trailer-btn" id="luckyTrailerBtn" data-key="${tmdb.trailerYoutubeKey}">
+                            <span>Xem Trailer</span>
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         </div>
     `;
 
     container.querySelector('#luckyPlayBtn')?.addEventListener('click', () => {
         closeRandomModal();
-        playMovie(movie.slug);
+        playMovie(movie.slug, movie.source || CONFIG.SOURCE_NAME, null, false);
+    });
+
+    container.querySelector('.lucky-poster-wrap')?.addEventListener('click', () => {
+        closeRandomModal();
+        playMovie(movie.slug, movie.source || CONFIG.SOURCE_NAME, null, false);
     });
 
     container.querySelector('#luckyTrailerBtn')?.addEventListener('click', (e) => {

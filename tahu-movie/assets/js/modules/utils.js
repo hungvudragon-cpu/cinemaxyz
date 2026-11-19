@@ -86,7 +86,8 @@ export function endTransition() {
 
 // Xử lý link ảnh an toàn
 export function getSafeImageUrl(movie) {
-    return movie.thumb_url || movie.poster_url || CONFIG.DEFAULT_THUMB;
+    if (!movie) return CONFIG.DEFAULT_THUMB;
+    return movie.poster_url || movie.thumb_url || movie.image || movie.poster || movie.thumb || CONFIG.DEFAULT_THUMB;
 }
 
 // Tách tên mảng danh mục / diễn viên / quốc gia

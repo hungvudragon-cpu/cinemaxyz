@@ -21,9 +21,9 @@ export function createMovieCard(movie, onCardClick, onFavToggleCallback) {
     // Prefetch khi hover
     card.addEventListener('mouseenter', () => prefetchMovie(movie.slug, source), { once: true });
     
-    // Nhấp vào phim để xem
+    // Nhấp vào poster phim để xem trang giới thiệu trước
     card.onclick = () => {
-        if (onCardClick) onCardClick(movie);
+        if (onCardClick) onCardClick(movie, false);
     };
 
     const imgUrl = getSafeImageUrl(movie);
@@ -84,12 +84,30 @@ export function createMovieCard(movie, onCardClick, onFavToggleCallback) {
                 name: movie.name,
                 originalName: originalName,
                 image: imgUrl,
+                thumb_url: movie.thumb_url || imgUrl,
+                poster_url: movie.poster_url || imgUrl,
                 episode_current: episodeBadge
             }, favBtn, (isNowFav) => {
                 favBtn.innerHTML = getHeartSvg(isNowFav);
                 favBtn.classList.toggle('active', isNowFav);
                 if (onFavToggleCallback) onFavToggleCallback(isNowFav);
             });
+        };
+    }
+
+    const playBtn = card.querySelector('.hover-circle-btn.play-btn');
+    if (playBtn) {
+        playBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (onCardClick) onCardClick(movie, true);
+        };
+    }
+
+    const infoBtn = card.querySelector('.hover-circle-btn.info-btn');
+    if (infoBtn) {
+        infoBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (onCardClick) onCardClick(movie, false);
         };
     }
 
@@ -125,8 +143,8 @@ export function createMovieRailSection({ title, movies = [], onPlayMovie = null,
     const titleWrap = section.querySelector('.rail-title-wrap');
 
     movies.forEach(movie => {
-        rail.appendChild(createMovieCard(movie, (m) => {
-            if (onPlayMovie) onPlayMovie(m.slug, m.source);
+        rail.appendChild(createMovieCard(movie, (m, autoPlay = false) => {
+            if (onPlayMovie) onPlayMovie(m.slug, m.source, autoPlay);
         }));
     });
 
@@ -178,8 +196,8 @@ export function renderMovieCards(container, movies, isAppend = false, onPlayMovi
     if (!container) return;
     if (!isAppend) container.innerHTML = '';
     movies.forEach(movie => {
-        container.appendChild(createMovieCard(movie, (m) => {
-            if (onPlayMovie) onPlayMovie(m.slug, m.source);
+        container.appendChild(createMovieCard(movie, (m, autoPlay = false) => {
+            if (onPlayMovie) onPlayMovie(m.slug, m.source, autoPlay);
         }));
     });
 }

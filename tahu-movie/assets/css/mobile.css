@@ -528,3 +528,144 @@
         font-size: 13.5px !important;
     }
 }
+
+/* ==========================================================================
+   4. RESPONSIVE CHO PREVIEW BANNER & XÚC XẮC CHỌN PHIM
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* Xúc xắc chọn phim có poster */
+    .lucky-card-grid {
+        grid-template-columns: 110px 1fr !important;
+        gap: 14px !important;
+        padding: 16px !important;
+        align-items: flex-start !important;
+    }
+
+    .lucky-poster-wrap {
+        width: 110px !important;
+        border-radius: 10px !important;
+    }
+
+    .lucky-title {
+        font-size: 16.5px !important;
+        line-height: 1.25 !important;
+    }
+
+    .lucky-desc {
+        font-size: 12.5px !important;
+        line-height: 1.5 !important;
+        margin: 4px 0 8px !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+    }
+
+    .lucky-actions {
+        gap: 8px !important;
+    }
+
+    .lucky-play-btn {
+        padding: 8px 16px !important;
+        font-size: 13px !important;
+    }
+
+    .lucky-trailer-btn {
+        padding: 8px 14px !important;
+        font-size: 12.5px !important;
+    }
+
+    /* Modal Giới Thiệu Phim trước khi xem */
+    .theater-preview-banner {
+        min-height: auto !important;
+        max-height: none !important;
+        border-radius: 16px 16px 0 0 !important;
+    }
+
+    .preview-inner {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 20px 16px !important;
+        gap: 16px !important;
+        min-height: auto !important;
+    }
+
+    .preview-poster-col {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: flex-start !important;
+    }
+
+    .preview-poster-card {
+        width: 110px !important;
+        aspect-ratio: 2 / 3 !important;
+        border-radius: 10px !important;
+    }
+
+    .preview-title {
+        font-size: 20px !important;
+        line-height: 1.25 !important;
+    }
+
+    .preview-orig-title {
+        font-size: 12.5px !important;
+    }
+
+    .preview-synopsis {
+        font-size: 12.5px !important;
+        line-height: 1.55 !important;
+        -webkit-line-clamp: 3 !important;
+        margin: 4px 0 10px !important;
+    }
+
+    .preview-action-row {
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    .preview-play-btn {
+        padding: 9px 18px !important;
+        font-size: 13.5px !important;
+        flex: 1 !important;
+        justify-content: center !important;
+    }
+
+    .preview-trailer-btn {
+        padding: 9px 14px !important;
+        font-size: 13px !important;
+    }
+
+    .preview-round-btn {
+        width: 38px !important;
+        height: 38px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .lucky-card-grid {
+        grid-template-columns: 95px 1fr !important;
+        gap: 12px !important;
+        padding: 12px !important;
+    }
+
+    .lucky-poster-wrap {
+        width: 95px !important;
+    }
+
+    .lucky-title {
+        font-size: 15px !important;
+    }
+
+    .preview-poster-card {
+        width: 95px !important;
+    }
+
+    .preview-title {
+        font-size: 18px !important;
+    }
+
+    .preview-play-btn {
+        padding: 8px 14px !important;
+        font-size: 13px !important;
+    }
+}

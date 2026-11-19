@@ -12,6 +12,8 @@ let currentEpIndex = 0;
 let globalMovieEpisodes = [];
 let currentServerEpisodes = [];
 let activeChunkIndex = 0;
+let isWatchMode = false;
+let currentTMDBData = null;
 const EPISODES_PER_CHUNK = 40;
 
 const videoPlayer = document.getElementById('videoPlayer');
@@ -23,6 +25,17 @@ export function initPlayer() {
         player = new Plyr(videoPlayer, {
             controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
             settings: ['quality', 'speed', 'loop']
+        });
+    }
+
+    // Gắn sự kiện nút Quay lại Giới Thiệu
+    const backBtn = document.getElementById('backToOverviewBtn');
+    if (backBtn && !backBtn._hasBound) {
+        backBtn._hasBound = true;
+        backBtn.addEventListener('click', () => {
+            if (currentMovieData) {
+                showOverviewMode(currentMovieData, currentTMDBData);
+            }
         });
     }
 }
@@ -47,6 +60,12 @@ export function hideModal() {
 
 export function closeVideo() {
     hideModal();
+    isWatchMode = false;
+    const previewBanner = document.getElementById('theaterPreviewBanner');
+    const videoWrapper = document.getElementById('videoWrapper');
+    if (previewBanner) previewBanner.style.display = 'block';
+    if (videoWrapper) videoWrapper.style.display = 'none';
+
     storage.remove(CONFIG.STORAGE_KEYS.CURRENT_WATCH);
     if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
     if (player) { player.stop(); }
@@ -69,6 +88,15 @@ export function updateModalFavBtn(isFav) {
     if (btn) btn.classList.toggle('active', isFav);
     if (svg) svg.setAttribute('fill', isFav ? 'currentColor' : 'none');
     if (label) label.innerText = isFav ? 'Đã thích' : 'Yêu thích';
+
+    // Cập nhật nút Yêu thích trên Banner Giới Thiệu
+    const pFavBtn = document.getElementById('previewFavBtn');
+    const pFavSvg = document.getElementById('previewFavSvg');
+    if (pFavBtn) pFavBtn.classList.toggle('active', isFav);
+    if (pFavSvg) {
+        pFavSvg.setAttribute('fill', isFav ? '#E50914' : 'none');
+        pFavSvg.setAttribute('stroke', isFav ? '#E50914' : 'currentColor');
+    }
 }
 
 export function toggleCurrentModalFav() {
@@ -97,7 +125,159 @@ export function shareCurrentEpisode() {
     }
 }
 
-export async function playMovie(slug, source = CONFIG.SOURCE_NAME, resumeEp = null) {
+/**
+ * Hiển thị Banner Giới Thiệu Phim (Overview Mode)
+ */
+export function showOverviewMode(movieDetail, tmdb = null) {
+    isWatchMode = false;
+    const previewBanner = document.getElementById('theaterPreviewBanner');
+    const videoWrapper = document.getElementById('videoWrapper');
+    if (previewBanner) previewBanner.style.display = 'block';
+    if (videoWrapper) videoWrapper.style.display = 'none';
+
+    // Dừng video nếu đang chạy
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    if (player) { player.stop(); }
+    if (videoIframe) videoIframe.src = "";
+
+    const posterUrl = tmdb?.posterHd || movieDetail.poster_url || movieDetail.thumb_url || getSafeImageUrl(movieDetail);
+    const backdropUrl = tmdb?.backdrop4k || movieDetail.thumb_url || movieDetail.poster_url || posterUrl;
+
+    const posterImgEl = document.getElementById('previewPosterImg');
+    if (posterImgEl) {
+        posterImgEl.src = posterUrl;
+        posterImgEl.onerror = () => { posterImgEl.src = CONFIG.DEFAULT_THUMB; };
+    }
+
+    const backdropEl = document.getElementById('previewBackdrop');
+    if (backdropEl) {
+        backdropEl.style.backgroundImage = `url('${backdropUrl}')`;
+    }
+
+    const quality = movieDetail.quality || movieDetail.episode_current || "FHD";
+    const year = movieDetail.year || "2026";
+    const lang = movieDetail.lang || movieDetail.language || "Vietsub";
+    const time = movieDetail.time || "Đang cập nhật";
+
+    const qBadge = document.getElementById('previewQualityBadge');
+    if (qBadge) qBadge.innerText = quality;
+
+    const yBadge = document.getElementById('previewYearBadge');
+    if (yBadge) yBadge.innerText = year;
+
+    const lBadge = document.getElementById('previewLangBadge');
+    if (lBadge) lBadge.innerText = lang;
+
+    const tBadge = document.getElementById('previewTimeBadge');
+    if (tBadge) tBadge.innerText = time;
+
+    const titleEl = document.getElementById('previewTitle');
+    if (titleEl) titleEl.innerText = movieDetail.name || "Đang cập nhật...";
+
+    const origTitleEl = document.getElementById('previewOrigTitle');
+    const originalName = movieDetail.original_name || movieDetail.origin_name || "";
+    if (origTitleEl) origTitleEl.innerText = originalName;
+
+    const tmpDiv = document.createElement("div");
+    const descContent = movieDetail.description || movieDetail.content || "Chưa có thông tin mô tả chi tiết cho bộ phim này.";
+    tmpDiv.innerHTML = descContent;
+    const plainDesc = (tmpDiv.textContent || tmpDiv.innerText || descContent).slice(0, 220);
+    const synopsisEl = document.getElementById('previewSynopsis');
+    if (synopsisEl) synopsisEl.innerText = plainDesc ? `${plainDesc}...` : "";
+
+    // Nút Xem Phim trên Banner
+    const playBtn = document.getElementById('previewPlayBtn');
+    if (playBtn) {
+        playBtn.onclick = () => {
+            startPlayingVideo();
+        };
+    }
+
+    // Click vào Poster Wrap trên banner cũng bắt đầu phát phim
+    const posterWrap = document.getElementById('previewPosterWrap');
+    if (posterWrap) {
+        posterWrap.onclick = () => {
+            startPlayingVideo();
+        };
+    }
+
+    // Nút Yêu Thích trên Banner
+    const favBtn = document.getElementById('previewFavBtn');
+    const isFav = isFavorite(movieDetail.slug, movieDetail.source || CONFIG.SOURCE_NAME);
+    updateModalFavBtn(isFav);
+    if (favBtn) {
+        favBtn.onclick = () => {
+            toggleCurrentModalFav();
+        };
+    }
+
+    // Nút Chia Sẻ trên Banner
+    const shareBtn = document.getElementById('previewShareBtn');
+    if (shareBtn) {
+        shareBtn.onclick = () => {
+            shareCurrentEpisode();
+        };
+    }
+
+    // Nút Trailer trên Banner
+    const trailerBtn = document.getElementById('previewTrailerBtn');
+    if (trailerBtn) {
+        if (tmdb?.trailerYoutubeKey) {
+            trailerBtn.style.display = 'inline-flex';
+            trailerBtn.onclick = () => {
+                window.open(`https://www.youtube.com/watch?v=${tmdb.trailerYoutubeKey}`, '_blank');
+            };
+        } else {
+            trailerBtn.style.display = 'none';
+        }
+    }
+
+    // TMDB Score Badge trên Banner
+    const tmdbBadge = document.getElementById('previewTmdbBadge');
+    if (tmdbBadge) {
+        if (tmdb?.voteAverage) {
+            tmdbBadge.innerHTML = `⭐ <strong>${tmdb.voteAverage}</strong> TMDB`;
+            tmdbBadge.style.display = 'inline-flex';
+        } else {
+            tmdbBadge.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Bắt đầu phát phim (Watch Mode)
+ */
+export function startPlayingVideo(serverIdx = null, epIdx = null) {
+    isWatchMode = true;
+    const previewBanner = document.getElementById('theaterPreviewBanner');
+    const videoWrapper = document.getElementById('videoWrapper');
+    if (previewBanner) previewBanner.style.display = 'none';
+    if (videoWrapper) videoWrapper.style.display = 'block';
+
+    if (serverIdx !== null && serverIdx !== undefined) {
+        currentServerIndex = serverIdx;
+    }
+    const targetEp = (epIdx !== null && epIdx !== undefined) ? epIdx : currentEpIndex;
+
+    // Đảm bảo server episodes đã sẵn sàng
+    if (!currentServerEpisodes || currentServerEpisodes.length === 0) {
+        if (globalMovieEpisodes[currentServerIndex]) {
+            currentServerEpisodes = globalMovieEpisodes[currentServerIndex]?.server_data || globalMovieEpisodes[currentServerIndex]?.items || [];
+        }
+    }
+
+    if (currentServerEpisodes && currentServerEpisodes[targetEp]) {
+        playEpisode(targetEp, currentServerEpisodes);
+    } else if (currentServerEpisodes && currentServerEpisodes.length > 0) {
+        playEpisode(0, currentServerEpisodes);
+    }
+
+    // Cuộn modal lên đỉnh để xem video trọn vẹn
+    const modal = document.getElementById('videoModal');
+    if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+export async function playMovie(slug, source = CONFIG.SOURCE_NAME, resumeEp = null, autoPlay = false) {
     initPlayer();
     showModal();
 
@@ -121,26 +301,38 @@ export async function playMovie(slug, source = CONFIG.SOURCE_NAME, resumeEp = nu
 
         const originalName = movieDetail.original_name || movieDetail.origin_name || "";
         const movieImg = getSafeImageUrl(movieDetail);
+        const posterImg = movieDetail.poster_url || movieDetail.thumb_url || movieImg;
+        const backdropImg = movieDetail.thumb_url || movieDetail.poster_url || movieImg;
 
         currentMovieData = {
             slug: slug,
             source: source,
             name: movieDetail.name || "Đang cập nhật",
             originalName: originalName,
-            image: movieImg,
-            episode_current: movieDetail.episode_current || "FHD"
+            image: posterImg,
+            thumb_url: backdropImg,
+            poster_url: posterImg,
+            quality: movieDetail.quality || movieDetail.episode_current || "FHD",
+            episode_current: movieDetail.episode_current || "FHD",
+            lang: movieDetail.lang || movieDetail.language || "Vietsub",
+            year: movieDetail.year || "2026",
+            time: movieDetail.time || "Đang cập nhật",
+            description: movieDetail.description || movieDetail.content || ""
         };
 
         // Ambient theater glow backdrop
         const theaterGlow = document.getElementById('theaterAmbientGlow');
-        if (theaterGlow && movieImg) {
-            theaterGlow.style.backgroundImage = `url('${movieImg}')`;
+        if (theaterGlow && (backdropImg || movieImg)) {
+            theaterGlow.style.backgroundImage = `url('${backdropImg || movieImg}')`;
             theaterGlow.style.backgroundSize = 'cover';
             theaterGlow.style.backgroundPosition = 'center';
         }
 
         saveToHistory(currentMovieData);
         updateModalFavBtn(isFavorite(slug, source));
+
+        // Mở trước ở chế độ Giới Thiệu Phim (Overview Mode)
+        showOverviewMode(currentMovieData, null);
 
         document.getElementById('detailTitle').innerText = movieDetail.name || "Đang cập nhật...";
         document.getElementById('detailOriginalTitle').innerText = originalName;
@@ -175,13 +367,14 @@ export async function playMovie(slug, source = CONFIG.SOURCE_NAME, resumeEp = nu
                 const btn = document.createElement('button');
                 btn.className = 'server-btn' + (index === 0 ? ' active' : '');
                 btn.innerText = server.server_name || `Server ${index + 1}`;
-                btn.onclick = () => selectServer(index);
+                btn.onclick = () => selectServer(index, 0, isWatchMode);
                 serverListEl.appendChild(btn);
             });
 
             const targetServer = resumeEp?.serverIndex || 0;
             const targetEpisode = resumeEp?.episodeIndex || 0;
-            selectServer(targetServer, targetEpisode);
+            const shouldPlay = autoPlay || !!resumeEp;
+            selectServer(targetServer, targetEpisode, shouldPlay);
         } else {
             serverContainer.style.display = 'none';
             document.getElementById('episodeContainer').style.display = 'none';
@@ -196,8 +389,9 @@ export async function playMovie(slug, source = CONFIG.SOURCE_NAME, resumeEp = nu
     }
 }
 
-function selectServer(serverIndex, targetEpIndex = 0) {
+function selectServer(serverIndex, targetEpIndex = 0, shouldPlay = true) {
     currentServerIndex = serverIndex;
+    currentEpIndex = targetEpIndex;
     document.querySelectorAll('.server-btn').forEach((btn, idx) => {
         btn.classList.toggle('active', idx === serverIndex);
     });
@@ -217,10 +411,8 @@ function selectServer(serverIndex, targetEpIndex = 0) {
     activeChunkIndex = Math.floor(targetEpIndex / EPISODES_PER_CHUNK);
     renderEpisodeControls(currentServerEpisodes, targetEpIndex);
 
-    if (currentServerEpisodes[targetEpIndex]) {
-        playEpisode(targetEpIndex, currentServerEpisodes);
-    } else if (currentServerEpisodes.length > 0) {
-        playEpisode(0, currentServerEpisodes);
+    if (shouldPlay) {
+        startPlayingVideo(serverIndex, targetEpIndex);
     }
 }
 
@@ -300,7 +492,9 @@ function renderEpisodeButtons(serverData, activeIndex = 0) {
         btn.className = 'ep-btn' + (isActive ? ' active' : '') + (isWatched && !isActive ? ' watched' : '');
         btn.setAttribute('data-ep-idx', idx);
         btn.innerText = tap.name || `Tập ${idx + 1}`;
-        btn.onclick = () => playEpisode(idx, serverData);
+        btn.onclick = () => {
+            startPlayingVideo(currentServerIndex, idx);
+        };
         episodeList.appendChild(btn);
 
         if (isActive) {
@@ -458,6 +652,12 @@ async function loadTMDBEnrichment(title, originalTitle, year) {
     try {
         const tmdb = await getTMDBDetails(title, originalTitle, year);
         if (!tmdb) return;
+        currentTMDBData = tmdb;
+
+        // Cập nhật lại Banner Giới Thiệu nếu đang ở Overview Mode
+        if (!isWatchMode && currentMovieData) {
+            showOverviewMode(currentMovieData, tmdb);
+        }
 
         // Điểm đánh giá TMDB
         if (tmdb.voteAverage && tmdbPill) {

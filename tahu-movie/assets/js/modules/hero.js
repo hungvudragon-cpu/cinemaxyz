@@ -92,15 +92,15 @@ async function updateHeroBannerDisplay(index) {
     const langEl = document.getElementById('heroLang');
     if (langEl) langEl.innerText = movie.lang || movie.language || "Vietsub";
 
-    const playAction = () => {
-        if (onPlayMovieCallback) onPlayMovieCallback(movie.slug, movie.source);
+    const playAction = (autoPlay = false) => {
+        if (onPlayMovieCallback) onPlayMovieCallback(movie.slug, movie.source, autoPlay);
     };
 
     const playBtn = document.getElementById('heroPlayBtn');
-    if (playBtn) playBtn.onclick = playAction;
+    if (playBtn) playBtn.onclick = () => playAction(false);
 
     const infoBtn = document.getElementById('heroInfoBtn');
-    if (infoBtn) infoBtn.onclick = playAction;
+    if (infoBtn) infoBtn.onclick = () => playAction(false);
 
     document.querySelectorAll('.dot').forEach((d, i) => {
         d.classList.toggle('active', i === index);

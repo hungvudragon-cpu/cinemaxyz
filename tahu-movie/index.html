@@ -232,9 +232,64 @@
             </button>
             
             <!-- Video Player Theater Wrapper -->
-            <div class="theater-player-frame">
+            <div class="theater-player-frame" id="theaterPlayerFrame">
                 <div class="theater-ambient-glow" id="theaterAmbientGlow"></div>
-                <div class="video-player-wrap" id="videoWrapper">
+
+                <!-- BANNER GIỚI THIỆU PHIM (Overview Mode) -->
+                <div class="theater-preview-banner" id="theaterPreviewBanner">
+                    <div class="preview-backdrop" id="previewBackdrop"></div>
+                    <div class="preview-backdrop-overlay"></div>
+                    <div class="preview-inner">
+                        <div class="preview-poster-col">
+                            <div class="preview-poster-card" id="previewPosterWrap" title="Bấm để phát phim ngay">
+                                <img id="previewPosterImg" class="preview-poster-img" src="" alt="Poster" loading="lazy">
+                                <span id="previewQualityBadge" class="preview-poster-badge">FHD</span>
+                                <div class="preview-poster-play-hint">
+                                    <svg viewBox="0 0 24 24" width="28" height="28" fill="#ffffff"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="preview-info-col">
+                            <div class="preview-badge-row">
+                                <span class="preview-tag red">ĐỀ XUẤT</span>
+                                <span id="previewMatchBadge" class="preview-tag green">98% Phù hợp</span>
+                                <span id="previewYearBadge" class="preview-tag">2026</span>
+                                <span id="previewLangBadge" class="preview-tag">Vietsub</span>
+                                <span id="previewTimeBadge" class="preview-tag">120 Phút</span>
+                                <span id="previewTmdbBadge" class="preview-tag gold" style="display:none;"></span>
+                            </div>
+                            <h1 id="previewTitle" class="preview-title">Tên Phim</h1>
+                            <div id="previewOrigTitle" class="preview-orig-title">Original Title</div>
+                            <p id="previewSynopsis" class="preview-synopsis">Mô tả phim tóm tắt...</p>
+                            
+                            <div class="preview-action-row">
+                                <button id="previewPlayBtn" class="btn-primary preview-play-btn" title="Bắt đầu xem phim ngay">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                                    <span id="previewPlayBtnText">Xem Phim</span>
+                                </button>
+                                <button id="previewTrailerBtn" class="btn-secondary preview-trailer-btn" style="display:none;" title="Xem Trailer YouTube">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    <span>Trailer</span>
+                                </button>
+                                <button id="previewFavBtn" class="preview-round-btn" title="Thêm vào danh sách yêu thích">
+                                    <svg id="previewFavSvg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                </button>
+                                <button id="previewShareBtn" class="preview-round-btn" title="Chia sẻ phim">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Player Theater Wrapper -->
+                <div class="video-player-wrap" id="videoWrapper" style="display:none;">
+                    <div class="player-back-bar" id="playerBackBar">
+                        <button class="btn-back-overview" id="backToOverviewBtn" title="Xem lại giới thiệu phim">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            <span>Thông tin phim & Giới thiệu</span>
+                        </button>
+                    </div>
                     <div class="plyr-wrapper" id="plyrWrapper">
                         <video id="videoPlayer" controls crossorigin playsinline></video>
                     </div>

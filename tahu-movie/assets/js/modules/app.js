@@ -144,7 +144,7 @@ export async function loadData(isAppend = false) {
 
             if (isHomePage) {
                 if (movies.length > 0) {
-                    initHeroSlider(movies, (slug, source) => playMovie(slug, source));
+                    initHeroSlider(movies, (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay));
                 }
 
                 if (railsContainer) {
@@ -156,7 +156,7 @@ export async function loadData(isAppend = false) {
                     const railLatest = createMovieRailSection({
                         title: 'Phim Mới Cập Nhật',
                         movies: movies.slice(0, 14),
-                        onPlayMovie: (slug, source) => playMovie(slug, source)
+                        onPlayMovie: (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay)
                     });
                     railsContainer.appendChild(railLatest);
 
@@ -170,7 +170,7 @@ export async function loadData(isAppend = false) {
                             railsContainer.appendChild(createMovieRailSection({
                                 title: 'Phim Bộ Đang Thịnh Hành',
                                 movies: seriesList.slice(0, 14),
-                                onPlayMovie: (slug, source) => playMovie(slug, source),
+                                onPlayMovie: (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay),
                                 onSeeAll: () => filterType('phim-bo', document.getElementById('navSeries'))
                             }));
                         }
@@ -178,7 +178,7 @@ export async function loadData(isAppend = false) {
                             railsContainer.appendChild(createMovieRailSection({
                                 title: 'Phim Lẻ Đỉnh Cao',
                                 movies: singlesList.slice(0, 14),
-                                onPlayMovie: (slug, source) => playMovie(slug, source),
+                                onPlayMovie: (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay),
                                 onSeeAll: () => filterType('phim-le', document.getElementById('navSingle'))
                             }));
                         }
@@ -186,7 +186,7 @@ export async function loadData(isAppend = false) {
                             railsContainer.appendChild(createMovieRailSection({
                                 title: 'Thế Giới Anime & Hoạt Hình',
                                 movies: animeList.slice(0, 14),
-                                onPlayMovie: (slug, source) => playMovie(slug, source),
+                                onPlayMovie: (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay),
                                 onSeeAll: () => filterType('hoat-hinh', document.getElementById('navAnime'))
                             }));
                         }
@@ -230,7 +230,7 @@ export async function loadData(isAppend = false) {
                 });
             }
         } else if (!isHomePage) {
-            renderMovieCards(movieGrid, movies, isAppend, (slug, source) => playMovie(slug, source));
+            renderMovieCards(movieGrid, movies, isAppend, (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay));
             if (movies.length < 10) {
                 state.hasMoreData = false;
                 if (endIndicator) endIndicator.style.display = 'flex';
@@ -365,7 +365,7 @@ function loadFavoritesView(targetNav) {
         `;
         document.getElementById('emptyFavHomeBtn')?.addEventListener('click', resetToHome);
     } else {
-        renderMovieCards(movieGrid, favs, false, (slug, source) => playMovie(slug, source));
+        renderMovieCards(movieGrid, favs, false, (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay));
     }
 }
 
@@ -415,7 +415,7 @@ function loadHistoryView(targetNav) {
         `;
         document.getElementById('emptyHistHomeBtn')?.addEventListener('click', resetToHome);
     } else {
-        renderMovieCards(movieGrid, history, false, (slug, source) => playMovie(slug, source));
+        renderMovieCards(movieGrid, history, false, (slug, source, autoPlay = false) => playMovie(slug, source, null, autoPlay));
     }
 }
 
@@ -601,7 +601,7 @@ function setupSearch() {
                 const name = el.getAttribute('data-name');
                 if (name) hybridSearchService.saveRecentSearch(name);
                 resultsBox.classList.remove('show');
-                playMovie(slug);
+                playMovie(slug, CONFIG.SOURCE_NAME, null, false);
             });
         });
 
@@ -703,7 +703,7 @@ function setupSearch() {
                     const name = selected.getAttribute('data-name');
                     if (name) hybridSearchService.saveRecentSearch(name);
                     resultsBox.classList.remove('show');
-                    playMovie(slug);
+                    playMovie(slug, CONFIG.SOURCE_NAME, null, false);
                 } else if (selected.classList.contains('recent-item')) {
                     const kw = selected.getAttribute('data-keyword');
                     input.value = kw;
