@@ -1,79 +1,147 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#141414">
     <meta name="referrer" content="origin">
-    <title>TaHu - Xem Phim Trực Tuyến Miễn Phí</title>
+    <meta name="description" content="TaHu Cinema - Nền tảng xem phim trực tuyến điện ảnh đỉnh cao, lấy cảm hứng từ Netflix, Apple TV+ và HBO Max.">
+    <title>TaHu Cinema — Trải Nghiệm Xem Phim Điện Ảnh</title>
     
-    <link rel="icon" href="https://img.icons8.com/color/48/cinema-.png" type="image/x-icon">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bgGrad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23181B26'/%3E%3Cstop offset='100%25' stop-color='%23090A0F'/%3E%3C/linearGradient%3E%3ClinearGradient id='redGrad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23FF2A36'/%3E%3Cstop offset='100%25' stop-color='%23B8000C'/%3E%3C/linearGradient%3E%3Cfilter id='glow' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='3' flood-color='%23FF2A36' flood-opacity='0.6'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23bgGrad)' stroke='rgba(255,255,255,0.12)' stroke-width='1.5'/%3E%3Cpath d='M16 16h32c1.65 0 3 1.35 3 3v3c0 1.65-1.35 3-3 3H37v23c0 1.65-1.35 3-3 3h-6c-1.65 0-3-1.35-3-3V25H16c-1.65 0-3-1.35-3-3v-3c0-1.65 1.35-3 3-3z' fill='url(%23redGrad)' filter='url(%23glow)'/%3E%3Cpolygon points='38,32 50,39 38,46' fill='%23FFFFFF' opacity='0.95'/%3E%3C/svg%3E">
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Be Vietnam Pro (Đẳng cấp Tiếng Việt & Cinematic) + Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- HLS & Plyr CDN -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
-    <!-- Custom CSS -->
+    <!-- Custom Cinematic CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Dedicated Mobile & Tablet Responsive CSS -->
+    <link rel="stylesheet" href="assets/css/mobile.css">
 </head>
 <body>
 
-    <!-- Smooth Transition Overlay -->
-    <div id="transitionOverlay"></div>
-
-    <!-- Toast Notification -->
-    <div id="appToast" class="toast">
-        <span id="toastMsg">Thông báo</span>
-    </div>
-
-    <!-- Mobile Overlay -->
-    <div id="mobileOverlay" class="mobile-overlay"></div>
-
-    <!-- HEADER -->
-    <header id="mainHeader">
-        <div class="header-content">
-            <div class="header-left">
-                <button class="mobile-toggle" title="Mở Menu">
-                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-                </button>
-                
-                <a class="logo" title="TaHu Phim">
-                    <svg class="logo-img" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="36" height="36" rx="10" fill="url(#logo_grad)"/>
-                        <path d="M13 11L25 18L13 25V11Z" fill="white"/>
+    <!-- Cinematic Page Entry Splash Intro -->
+    <div id="pageSplashIntro" class="page-splash-intro" aria-hidden="true">
+        <div class="splash-inner">
+            <div class="splash-logo-wrap">
+                <div class="splash-logo-icon">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="12" fill="url(#splash_logo_bg)"/>
+                        <rect x="0.75" y="0.75" width="38.5" height="38.5" rx="11.25" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+                        <path d="M11 12H29C30.1 12 31 12.9 31 14V16C31 17.1 30.1 18 29 18H23V28C23 29.1 22.1 30 21 30H19C17.9 30 17 29.1 17 28V18H11C9.9 18 9 17.1 9 16V14C9 12.9 9.9 12 11 12Z" fill="url(#splash_logo_red)"/>
+                        <path d="M22 19L29 23.5L22 28V19Z" fill="#FFFFFF" fill-opacity="0.95"/>
                         <defs>
-                            <linearGradient id="logo_grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#FF2A4B"/>
-                                <stop offset="1" stop-color="#99001C"/>
+                            <linearGradient id="splash_logo_bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1E2333"/>
+                                <stop offset="1" stop-color="#0E111A"/>
+                            </linearGradient>
+                            <linearGradient id="splash_logo_red" x1="9" y1="12" x2="31" y2="30" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#FF2A36"/>
+                                <stop offset="1" stop-color="#B8000C"/>
                             </linearGradient>
                         </defs>
                     </svg>
-                    <span class="logo-text">TaHu</span>
-                    <span class="logo-badge">PREMIUM</span>
+                </div>
+                <div class="splash-brand-titles">
+                    <span class="splash-main">TaHu</span>
+                    <span class="splash-sub">CINEMA</span>
+                </div>
+            </div>
+            <div class="splash-loader-bar">
+                <div class="splash-loader-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ambient Cinematic Lighting Spheres -->
+    <div class="ambient-glow ambient-glow-1" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow-2" aria-hidden="true"></div>
+
+    <!-- Netflix Smooth Top Progress Bar -->
+    <div id="netflixTopLoader" class="netflix-top-loader" aria-hidden="true"></div>
+
+    <!-- Floating Toast Notification -->
+    <div id="appToast" class="toast" role="status" aria-live="polite">
+        <div class="toast-dot"></div>
+        <span id="toastMsg">Thông báo</span>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobileOverlay" class="mobile-overlay" aria-hidden="true"></div>
+
+    <!-- FLOATING GLASS HEADER -->
+    <header id="mainHeader">
+        <div class="header-inner">
+            <div class="header-left">
+                <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Mở menu" title="Mở menu">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                
+                <a class="logo" id="headerLogo" href="#" title="TaHu Cinema">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="40" height="40" rx="12" fill="url(#tahu_logo_bg)"/>
+                            <rect x="0.75" y="0.75" width="38.5" height="38.5" rx="11.25" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+                            <!-- Stylized T film roll & play -->
+                            <path d="M11 12H29C30.1 12 31 12.9 31 14V16C31 17.1 30.1 18 29 18H23V28C23 29.1 22.1 30 21 30H19C17.9 30 17 29.1 17 28V18H11C9.9 18 9 17.1 9 16V14C9 12.9 9.9 12 11 12Z" fill="url(#tahu_logo_red)"/>
+                            <path d="M22 19L29 23.5L22 28V19Z" fill="#FFFFFF" fill-opacity="0.95"/>
+                            <defs>
+                                <linearGradient id="tahu_logo_bg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#1E2333"/>
+                                    <stop offset="1" stop-color="#0E111A"/>
+                                </linearGradient>
+                                <linearGradient id="tahu_logo_red" x1="9" y1="12" x2="31" y2="30" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#FF2A36"/>
+                                    <stop offset="1" stop-color="#B8000C"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="logo-titles">
+                        <span class="logo-main">TaHu</span>
+                        <span class="logo-sub">CINEMA</span>
+                    </div>
                 </a>
 
-                <nav class="nav-menu" id="navMenu">
-                    <div class="mobile-menu-top" style="display:none;" id="mobileMenuTop">
-                        <div style="font-weight:800; font-size:18px; color:var(--primary);">MENU CHÍNH</div>
-                        <button id="mobileCloseBtn" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">&times;</button>
+                <nav class="nav-menu" id="navMenu" aria-label="Điều hướng chính">
+                    <div class="mobile-menu-header" id="mobileMenuTop">
+                        <div class="mobile-brand">
+                            <span class="logo-main">TaHu</span>
+                            <span class="logo-sub">CINEMA</span>
+                        </div>
+                        <button id="mobileCloseBtn" class="mobile-close-btn" aria-label="Đóng Menu">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
                     </div>
+
                     <button class="nav-btn active" id="navHome">Trang chủ</button>
                     <button class="nav-btn" id="navSingle">Phim lẻ</button>
                     <button class="nav-btn" id="navSeries">Phim bộ</button>
                     <button class="nav-btn" id="navAnime">Hoạt hình</button>
                     <button class="nav-btn fav-btn" id="navFav">
-                        <span>❤</span> Yêu thích
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        <span>Yêu thích</span>
                     </button>
                     <button class="nav-btn" id="navHistory">
-                        <span>🕒</span> Lịch sử
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span>Lịch sử</span>
                     </button>
-                    <button class="nav-btn dice-nav-btn" id="navRandomPicker" title="Hôm nay xem gì?">
-                        <span>🎲</span> Hôm nay xem gì?
+                    <button class="nav-btn dice-btn" id="navRandomPicker" title="Phát ngẫu nhiên">
+                        <svg class="dice-icon-3d" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"></polyline>
+                            <line x1="4" y1="20" x2="21" y2="3"></line>
+                            <polyline points="21 16 21 21 16 21"></polyline>
+                            <line x1="15" y1="15" x2="21" y2="21"></line>
+                            <line x1="4" y1="4" x2="9" y2="9"></line>
+                        </svg>
+                        <span>Phát ngẫu nhiên</span>
                     </button>
                 </nav>
             </div>
@@ -81,96 +149,123 @@
             <div class="header-right">
                 <div class="search-container">
                     <div class="search-box">
-                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                        <input type="text" id="searchInput" placeholder="Tìm tên phim..." autocomplete="off">
-                        <button id="searchClearBtn" class="search-clear">&times;</button>
+                        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="searchInput" placeholder="Tìm tên phim, diễn viên..." autocomplete="off" spellcheck="false">
+                        <button id="searchClearBtn" class="search-clear" aria-label="Xóa" title="Xóa">&times;</button>
                     </div>
-                    <div id="searchResultsBox"></div>
+                    <div id="searchResultsBox" class="search-dropdown" role="listbox"></div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- HERO BANNER -->
-    <div id="heroBanner">
-        <div class="hero-backdrop" id="heroBackdrop"></div>
-        <div class="hero-vignette"></div>
-        <div class="hero-content">
-            <div class="hero-tag">Nổi bật hôm nay</div>
-            <h1 class="hero-title" id="heroTitle">Đang cập nhật...</h1>
-            <div class="hero-meta" id="heroMeta">
-                <span class="badge" id="heroBadgeQuality">HD</span>
-                <span id="heroYear">2024</span>
-                <span style="opacity:0.4">•</span>
-                <span id="heroLang">Vietsub</span>
-            </div>
-            <p class="hero-desc" id="heroDesc">Đang tải tóm tắt phim...</p>
-            <div class="hero-actions">
-                <button class="btn-primary" id="heroPlayBtn">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    Xem Ngay
-                </button>
-                <button class="btn-secondary" id="heroInfoBtn">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                    Chi Tiết
-                </button>
+    <!-- HERO BILLBOARD BANNER (NETFLIX FULL-BLEED 85vh) -->
+    <div id="heroBanner" class="hero-banner">
+        <div class="hero-backdrop-layer hero-backdrop-a active" id="heroBackdropA"></div>
+        <div class="hero-backdrop-layer hero-backdrop-b" id="heroBackdropB"></div>
+        <div class="hero-mask-v"></div>
+        <div class="hero-mask-h"></div>
+        
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="netflix-top10-row">
+                    <div class="top10-badge">TOP <span>10</span></div>
+                    <span class="top10-text">Phim thịnh hành hàng đầu hôm nay</span>
+                </div>
+                <h1 class="hero-title" id="heroTitle">Đang cập nhật...</h1>
+                <div class="hero-meta" id="heroMeta">
+                    <span class="netflix-match-score">98% Phù hợp</span>
+                    <span class="badge-fhd" id="heroBadgeQuality">FHD</span>
+                    <span class="hero-meta-item" id="heroYear">2026</span>
+                    <span class="badge-age-rating">16+</span>
+                    <span class="hero-meta-item" id="heroLang">Vietsub</span>
+                </div>
+                <p class="hero-desc" id="heroDesc">Đang tải tóm tắt phim...</p>
+                <div class="hero-actions">
+                    <button class="btn-netflix-play" id="heroPlayBtn">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span>Phát</span>
+                    </button>
+                    <button class="btn-netflix-info" id="heroInfoBtn">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>Thông tin khác</span>
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="hero-dots" id="heroDots"></div>
+
+        <div class="hero-right-meta">
+            <span class="age-badge-hero">16+</span>
+        </div>
+        <div class="hero-dots" id="heroDots" role="tablist"></div>
     </div>
 
-    <!-- Quick Category Chips & Hôm nay xem gì -->
-    <div class="filter-section" id="filterSection">
-        <div class="genre-chips-wrapper">
-            <div class="genre-chips" id="genreChips">
-                <button class="chip active" data-category="">Tất cả thể loại</button>
-                <button class="chip" data-category="hanh-dong">Hành Động</button>
-                <button class="chip" data-category="tinh-cam">Tình Cảm</button>
-                <button class="chip" data-category="hai-huoc">Hài Hước</button>
-                <button class="chip" data-category="kinh-di">Kinh Dị</button>
-                <button class="chip" data-category="phieu-luu">Phiêu Lưu</button>
-                <button class="chip" data-category="khoa-hoc-vien-tuong">Viễn Tưởng</button>
-                <button class="chip" data-category="hinh-su">Hình Sự</button>
-                <button class="chip" data-category="vo-thuat">Võ Thuật</button>
+    <!-- Quick Category Chips Bar -->
+    <section class="filter-section" id="filterSection">
+        <div class="filter-wrapper container">
+            <div class="genre-chips-scroll">
+                <div class="genre-chips" id="genreChips" role="tablist">
+                    <button class="chip active" data-category="">Tất cả thể loại</button>
+                    <button class="chip" data-category="hanh-dong">Hành Động</button>
+                    <button class="chip" data-category="tinh-cam">Tình Cảm</button>
+                    <button class="chip" data-category="hai-huoc">Hài Hước</button>
+                    <button class="chip" data-category="kinh-di">Kinh Dị</button>
+                    <button class="chip" data-category="phieu-luu">Phiêu Lưu</button>
+                    <button class="chip" data-category="khoa-hoc-vien-tuong">Viễn Tưởng</button>
+                    <button class="chip" data-category="hinh-su">Hình Sự</button>
+                    <button class="chip" data-category="vo-thuat">Võ Thuật</button>
+                </div>
             </div>
-            <button class="random-dice-btn" id="randomDiceQuickBtn" title="Hôm nay xem gì? Lắc xúc xắc ngay!">
-                <span class="dice-shake">🎲</span>
-                <span>Hôm Nay Xem Gì?</span>
-            </button>
         </div>
-    </div>
+    </section>
 
     <!-- MAIN SECTION HEADER -->
-    <div class="section-header">
-        <h2 class="section-title" id="currentSectionTitle">Phim Mới Cập Nhật</h2>
-        <div id="sectionActionArea"></div>
+    <div class="section-heading-bar">
+        <div class="container section-heading-inner">
+            <div class="section-title-group">
+                <span class="accent-bar"></span>
+                <h2 class="section-title" id="currentSectionTitle">Phim Mới Cập Nhật</h2>
+            </div>
+            <div id="sectionActionArea" class="section-action-area"></div>
+        </div>
     </div>
 
-    <!-- MOVIE GRID -->
-    <main class="container" id="movie-grid"></main>
+    <!-- DYNAMIC RAILS CONTAINER (CHO TRANG CHỦ) HOẶC GRID (CHO TÌM KIẾM/DANH MỤC) -->
+    <div id="railsContainer" class="rails-container container" style="display:none;"></div>
 
-    <!-- SKELETON LOADING -->
-    <div id="skeletonContainer" class="container"></div>
+    <!-- MOVIE GRID TRUYỀN THỐNG / PHÂN TRANG -->
+    <main class="container" id="movie-grid" aria-live="polite"></main>
+
+    <!-- SKELETON SHIMMER LOADING -->
+    <div id="skeletonContainer" class="container" aria-hidden="true"></div>
 
     <!-- END OF LIST -->
-    <div id="endOfListIndicator">Bạn đã xem hết danh sách phim hiện tại! ✨</div>
+    <div id="endOfListIndicator" class="end-of-list">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+        <span>Bạn đã khám phá hết danh sách phim hiện tại!</span>
+    </div>
 
     <!-- BACK TO TOP -->
-    <button id="backToTopBtn" title="Lên đầu trang">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    <button id="backToTopBtn" class="back-to-top" title="Lên đầu trang" aria-label="Lên đầu trang">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
     </button>
 
-    <!-- VIDEO MODAL -->
-    <div id="videoModal" class="modal">
-        <div class="modal-container">
-            <button class="modal-close-btn" id="modalCloseBtn" title="Đóng">&times;</button>
+    <!-- VIDEO MODAL (THEATER MODE WATCH PAGE) -->
+    <div id="videoModal" class="modal theater-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+        <div class="modal-box">
+            <button class="modal-close" id="modalCloseBtn" aria-label="Đóng Trình Phát" title="Đóng">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
             
-            <!-- Video Player -->
-            <div class="video-player-wrap" id="videoWrapper">
-                <div class="plyr-wrapper" id="plyrWrapper">
-                    <video id="videoPlayer" controls crossorigin playsinline></video>
+            <!-- Video Player Theater Wrapper -->
+            <div class="theater-player-frame">
+                <div class="theater-ambient-glow" id="theaterAmbientGlow"></div>
+                <div class="video-player-wrap" id="videoWrapper">
+                    <div class="plyr-wrapper" id="plyrWrapper">
+                        <video id="videoPlayer" controls crossorigin playsinline></video>
+                    </div>
+                    <iframe id="videoIframe" allowfullscreen referrerpolicy="origin" sandbox="allow-same-origin allow-scripts allow-forms allow-presentation allow-top-navigation-by-user-activation" title="Trình phát video"></iframe>
                 </div>
-                <iframe id="videoIframe" allowfullscreen referrerpolicy="origin" sandbox="allow-same-origin allow-scripts allow-forms allow-presentation allow-top-navigation-by-user-activation"></iframe>
             </div>
 
             <!-- Modal Content Area -->
@@ -180,90 +275,149 @@
                     <span id="loadingStatus">Đang kết nối đến máy chủ phim...</span>
                 </div>
 
-                <div id="modalContent" style="display:none; flex-direction:column; gap:20px;">
-                    <!-- Movie Details -->
-                    <div class="modal-info-header">
-                        <div class="modal-info-left">
-                            <h2 class="modal-title" id="detailTitle">Tên Phim</h2>
-                            <div class="modal-original-title" id="detailOriginalTitle"></div>
-                            <div class="modal-meta-pills">
-                                <span class="meta-pill highlight" id="detailQuality">HD</span>
-                                <span class="meta-pill" id="detailYear">2024</span>
-                                <span class="meta-pill" id="detailLang">Vietsub</span>
-                                <span class="meta-pill" id="detailTime">120 Phút</span>
-                                <span class="meta-pill tmdb-pill" id="detailTmdbRating" style="display:none;"></span>
+                <div id="modalContent" class="theater-content-grid" style="display:none;">
+                    <!-- LEFT COLUMN: Main Info & Episodes -->
+                    <div class="theater-main-col">
+                        <div class="movie-header-info">
+                            <div>
+                                <h2 class="detail-title" id="detailTitle">Tên Phim</h2>
+                                <div class="detail-orig-title" id="detailOriginalTitle"></div>
+                                <div class="meta-pill-group">
+                                    <span class="meta-pill badge-fhd" id="detailQuality">FHD</span>
+                                    <span class="meta-pill" id="detailYear">2026</span>
+                                    <span class="meta-pill" id="detailLang">Vietsub</span>
+                                    <span class="meta-pill" id="detailTime">120 Phút</span>
+                                    <span class="meta-pill tmdb-gold-pill" id="detailTmdbRating" style="display:none;"></span>
+                                </div>
+                            </div>
+                            <div class="detail-actions-bar">
+                                <button id="modalTrailerBtn" class="action-pill" style="display:none;" title="Xem Trailer YouTube">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    <span>Trailer</span>
+                                </button>
+                                <button id="modalShareBtn" class="action-pill" title="Sao chép link tập phim">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                                    <span>Chia sẻ</span>
+                                </button>
+                                <button id="modalFavBtn" class="action-pill fav-pill" title="Lưu vào danh sách yêu thích">
+                                    <svg id="modalFavSvg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                    <span id="modalFavLabel">Yêu thích</span>
+                                </button>
                             </div>
                         </div>
-                        <div style="display:flex; gap:8px; flex-wrap: wrap;">
-                            <button id="modalTrailerBtn" class="btn-secondary" style="padding:8px 18px; font-size:13px; display:none;">
-                                <span>▶</span> Trailer
-                            </button>
-                            <button id="modalShareBtn" class="btn-secondary" style="padding:8px 18px; font-size:13px;">
-                                <span>🔗</span> Chia sẻ link
-                            </button>
-                            <button id="modalFavBtn" class="btn-secondary" style="padding:8px 18px; font-size:13px;">
-                                <span id="modalFavIcon">🤍</span> Yêu thích
-                            </button>
+
+                        <!-- Server and Episode controls -->
+                        <div class="controls-panel" id="serverContainer">
+                            <div class="controls-header">
+                                <div class="controls-title">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                                    <span>Chọn Máy Chủ</span>
+                                </div>
+                            </div>
+                            <div class="server-list" id="serverList"></div>
+                        </div>
+
+                        <div class="controls-panel" id="episodeContainer">
+                            <div class="controls-header">
+                                <div class="controls-title">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+                                    <span>Danh Sách Tập</span>
+                                </div>
+                                <span id="episodeCountBadge" class="ep-count-text"></span>
+                            </div>
+                            <div class="episode-list" id="episodeList"></div>
+                        </div>
+
+                        <!-- Synopsis -->
+                        <div class="synopsis-box">
+                            <h4 class="block-heading">Nội dung tóm tắt</h4>
+                            <p class="modal-synopsis" id="detailDescription">Nội dung tóm tắt phim...</p>
+                            <button class="btn-read-more" id="readMoreBtn">Xem thêm ⌄</button>
+                        </div>
+
+                        <!-- TMDB Cast Section -->
+                        <div class="tmdb-cast-section" id="tmdbCastSection" style="display:none;">
+                            <h4 class="block-heading">
+                                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                <span>Diễn Viên Nổi Bật</span>
+                            </h4>
+                            <div class="tmdb-cast-list" id="tmdbCastList"></div>
                         </div>
                     </div>
 
-                    <!-- Synopsis -->
-                    <div>
-                        <p class="modal-synopsis" id="detailDescription">Nội dung tóm tắt phim...</p>
-                        <button class="btn-text" id="readMoreBtn">Xem thêm ⌄</button>
-                    </div>
-
-                    <!-- Diễn viên TMDB kèm Avatar -->
-                    <div class="tmdb-cast-section" id="tmdbCastSection" style="display:none;">
-                        <h4 class="tmdb-section-title">🎭 Diễn Viên Nổi Bật</h4>
-                        <div class="tmdb-cast-list" id="tmdbCastList"></div>
-                    </div>
-
-                    <!-- Additional Details -->
-                    <div class="modal-grid-meta">
-                        <p><strong>Thể loại:</strong> <span id="detailCategory">Đang cập nhật</span></p>
-                        <p><strong>Quốc gia:</strong> <span id="detailCountry">Đang cập nhật</span></p>
-                        <p><strong>Đạo diễn:</strong> <span id="detailDirector">Đang cập nhật</span></p>
-                        <p><strong>Diễn viên:</strong> <span id="detailCast">Đang cập nhật</span></p>
-                    </div>
-
-                    <!-- Phim tương tự TMDB -->
-                    <div class="tmdb-similar-section" id="tmdbSimilarSection" style="display:none;">
-                        <h4 class="tmdb-section-title">✨ Phim Tương Tự Có Thể Bạn Thích</h4>
-                        <div class="tmdb-similar-list" id="tmdbSimilarList"></div>
-                    </div>
-
-                    <!-- Server and Episode controls -->
-                    <div class="controls-panel" id="serverContainer">
-                        <div class="controls-header">
-                            <div class="controls-title">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M4 6h16v4H4zm0 8h16v4H4z"/></svg>
-                                Chọn Máy Chủ
+                    <!-- RIGHT COLUMN: Metadata & Similar Movies -->
+                    <div class="theater-side-col">
+                        <div class="meta-sidebar-card">
+                            <h4 class="block-heading">Thông tin phim</h4>
+                            <div class="meta-row">
+                                <span class="meta-row-label">Thể loại</span>
+                                <span class="meta-row-val" id="detailCategory">Đang cập nhật</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-row-label">Quốc gia</span>
+                                <span class="meta-row-val" id="detailCountry">Đang cập nhật</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-row-label">Đạo diễn</span>
+                                <span class="meta-row-val" id="detailDirector">Đang cập nhật</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-row-label">Diễn viên</span>
+                                <span class="meta-row-val" id="detailCast">Đang cập nhật</span>
                             </div>
                         </div>
-                        <div class="server-list" id="serverList"></div>
-                    </div>
 
-                    <div class="controls-panel" id="episodeContainer">
-                        <div class="controls-header">
-                            <div class="controls-title">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
-                                Danh Sách Tập
-                            </div>
-                            <span id="episodeCountBadge" style="font-size:12.5px; color:var(--text-sub);"></span>
+                        <!-- TMDB Similar Movies -->
+                        <div class="tmdb-similar-card-box" id="tmdbSimilarSection" style="display:none;">
+                            <h4 class="block-heading">
+                                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                <span>Phim Tương Tự</span>
+                            </h4>
+                            <div class="tmdb-similar-list" id="tmdbSimilarList"></div>
                         </div>
-                        <div class="episode-list" id="episodeList"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- MOBILE BOTTOM NAVIGATION (THUMB ZONE) -->
+    <nav class="mobile-bottom-bar" id="mobileBottomNav" aria-label="Menu điện thoại">
+        <button class="mobile-bottom-btn active" id="bnavHome">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Trang chủ</span>
+        </button>
+        <button class="mobile-bottom-btn" id="bnavSeries">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+            <span>Phim bộ</span>
+        </button>
+        <button class="mobile-bottom-btn" id="bnavSingle">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+            <span>Phim lẻ</span>
+        </button>
+        <button class="mobile-bottom-btn" id="bnavFav">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span>Yêu thích</span>
+        </button>
+        <button class="mobile-bottom-btn" id="bnavSearch">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>Tìm kiếm</span>
+        </button>
+    </nav>
+
     <!-- FOOTER -->
     <footer>
-        <div class="footer-content">
-            <div><strong>TaHu Cinema</strong> — Trải nghiệm xem phim trực tuyến chất lượng cao, giao diện thân thiện & hiện đại.</div>
-            <div>Dữ liệu được cung cấp từ nguồn API mở cộng đồng (nguonc). Trang web chỉ phục vụ mục đích học tập và giải trí cá nhân.</div>
+        <div class="footer-inner container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <span class="logo-main">TaHu</span>
+                    <span class="logo-sub">CINEMA</span>
+                </div>
+                <p class="footer-description">Trải nghiệm xem phim trực tuyến điện ảnh chất lượng cao, giao diện tối ưu hóa theo quy chuẩn Cinematic Streaming Platform.</p>
+            </div>
+            <div class="footer-bottom">
+                <span>Dữ liệu phim từ nguồn API mở cộng đồng (nguonc). Trang web tĩnh phi thương mại phục vụ mục đích học tập và giải trí cá nhân.</span>
+            </div>
         </div>
     </footer>
 

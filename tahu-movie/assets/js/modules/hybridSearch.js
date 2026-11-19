@@ -1,20 +1,19 @@
 import { CONFIG } from './config.js';
-import { scoreMovie, extractShortKeyword, normalizeText } from './smartSearch.js';
+import { scoreMovie, generateSearchQueries, correctQueryTypos, normalizeText } from './smartSearch.js';
 import { fetchMovieList } from './api.js';
 
 /**
- * Service Tìm kiếm Lai 2 Tầng (Hybrid 2-Tier Search Service)
- * 
- * - Pre-fetch Local Pool từ API (page 1 & 2) lưu vào sessionStorage
- * - Tầng 1: Lọc tức thì trên Local Pool (< 10ms)
- * - Tầng 2: Debounced 400ms gọi API NguonC với từ khóa rút gọn, AbortController hủy request thừa
- * - Cache kết quả API theo query trong sessionStorage
- * - Quản lý 5 lịch sử tìm kiếm gần nhất trong localStorage
+ * Service Tìm kiếm Lai 2 Tầng Cải Tiến (Enhanced Hybrid Search Engine)
+ * - Tầng 1: Lọc tức thì trên Local Pool (< 5ms)
+ * - Tầng 2: Tìm kiếm API NguonC đa biến thể (Full Query + Typo-corrected + Alias + Sub-queries Fallback)
+ * - Tự động phát hiện lỗi chính tả (Did You Mean & Auto-correction)
+ * - Cache kết quả thông minh trong sessionStorage
+ * - Quản lý lịch sử tìm kiếm gần nhất trong localStorage
  */
 
 const STORAGE_KEY_RECENT = 'cinemax_recent_searches';
 const SESSION_KEY_LOCAL_POOL = 'cinemax_search_local_pool';
-const SESSION_KEY_API_PREFIX = 'cinemax_api_search_';
+const SESSION_KEY_API_PREFIX = 'cinemax_api_search_v2_';
 
 class HybridSearchService {
     constructor() {
@@ -25,7 +24,7 @@ class HybridSearchService {
     }
 
     /**
-     * Khởi tạo và nạp trước Local Movie Pool (Page 1 & 2 phim mới cập nhật)
+     * Khởi tạo và nạp trước Local Movie Pool phong phú
      */
     async initLocalPool() {
         if (this.isPoolLoaded && this.localPool.length > 0) return;
@@ -81,7 +80,7 @@ class HybridSearchService {
     }
 
     /**
-     * Tầng 1: Instant Local Search (< 10ms)
+     * Tầng 1: Instant Local Search (< 5ms)
      * Lọc và xếp hạng trực tiếp trên Local Pool
      */
     searchLocal(query) {
@@ -90,7 +89,7 @@ class HybridSearchService {
 
         for (const movie of this.localPool) {
             const match = scoreMovie(query, movie);
-            if (match.score > 80) {
+            if (match.score > 70) {
                 results.push({
                     ...movie,
                     searchScore: match.score,
@@ -100,20 +99,18 @@ class HybridSearchService {
             }
         }
 
-        // Sắp xếp giảm dần theo điểm số
         results.sort((a, b) => b.searchScore - a.searchScore);
-        return results.slice(0, 8);
+        return results.slice(0, 10);
     }
 
     /**
-     * Tầng 2: Gọi API NguonC với AbortController và Cache sessionStorage
+     * Tầng 2: Gọi API NguonC với Full Query, Typo Fallback và Alias Mapping
      */
     async searchApi(query) {
-        const shortKeyword = extractShortKeyword(query);
-        const searchKeyword = shortKeyword || query.trim();
-        if (!searchKeyword) return [];
+        const rawQuery = (query || '').trim();
+        if (!rawQuery) return [];
 
-        const cacheKey = SESSION_KEY_API_PREFIX + encodeURIComponent(normalizeText(searchKeyword));
+        const cacheKey = SESSION_KEY_API_PREFIX + encodeURIComponent(normalizeText(rawQuery));
 
         // Kiểm tra cache sessionStorage
         try {
@@ -124,7 +121,7 @@ class HybridSearchService {
             }
         } catch (e) {}
 
-        // Hủy request API đang bay trước đó nếu có (Bảo vệ API, tránh race condition)
+        // Hủy request API trước đó nếu còn đang pending
         if (this.activeAbortController) {
             this.activeAbortController.abort();
         }
@@ -132,16 +129,50 @@ class HybridSearchService {
         const signal = this.activeAbortController.signal;
 
         try {
-            const url = `${CONFIG.API_BASE}/films/search?keyword=${encodeURIComponent(searchKeyword)}&page=1`;
-            const res = await fetch(url, { signal });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            // Tạo danh sách các truy vấn theo thứ tự ưu tiên: Query gốc -> Đã sửa typo -> Alias -> Sub-query
+            const searchQueries = generateSearchQueries(rawQuery);
+            const mergedMap = new Map();
 
-            const data = await res.json();
-            // Safety guard kiểm tra mảng
-            const items = Array.isArray(data?.items) ? data.items : [];
+            // Hàm fetch an toàn từ API NguonC
+            const fetchFromApi = async (keyword) => {
+                try {
+                    const url = `${CONFIG.API_BASE}/films/search?keyword=${encodeURIComponent(keyword)}&page=1`;
+                    const res = await fetch(url, { signal });
+                    if (!res.ok) return [];
+                    const data = await res.json();
+                    return Array.isArray(data?.items) ? data.items : [];
+                } catch (e) {
+                    return [];
+                }
+            };
+
+            // 1. Thử truy vấn đầu tiên (Query gốc)
+            const primaryItems = await fetchFromApi(searchQueries[0]);
+            primaryItems.forEach(item => {
+                if (item?.slug && !mergedMap.has(item.slug)) {
+                    mergedMap.set(item.slug, item);
+                }
+            });
+
+            // 2. Nếu query gốc có ít hơn 3 kết quả và có các query bổ trợ (do typo hoặc alias)
+            if (mergedMap.size < 3 && searchQueries.length > 1) {
+                const fallbackQueries = searchQueries.slice(1, 4); // Thử tối đa 3 query bổ trợ
+                const fallbackPromises = fallbackQueries.map(q => fetchFromApi(q));
+                const fallbackResults = await Promise.all(fallbackPromises);
+
+                fallbackResults.forEach(itemList => {
+                    itemList.forEach(item => {
+                        if (item?.slug && !mergedMap.has(item.slug)) {
+                            mergedMap.set(item.slug, item);
+                        }
+                    });
+                });
+            }
+
+            const rawItems = Array.from(mergedMap.values());
 
             // Chuẩn hóa cấu trúc movie item
-            const normalizedItems = items.map(m => ({
+            const normalizedItems = rawItems.map(m => ({
                 slug: m.slug,
                 name: m.name || '',
                 original_name: m.original_name || m.origin_name || '',
@@ -151,7 +182,7 @@ class HybridSearchService {
                 source: CONFIG.SOURCE_NAME
             }));
 
-            // Thêm các phim mới tìm được vào Local Pool động để làm giàu tập dữ liệu client
+            // Làm giàu Local Pool để tăng tốc cho các lần tìm tiếp theo
             this.enrichLocalPool(normalizedItems);
 
             // Lưu cache sessionStorage
@@ -162,7 +193,7 @@ class HybridSearchService {
             return normalizedItems;
         } catch (err) {
             if (err.name === 'AbortError') {
-                return null; // Bị hủy bởi request mới hơn
+                return null; // Bị hủy bởi ký tự gõ mới hơn
             }
             console.warn('Lỗi tìm kiếm API NguonC:', err.message);
             return [];
@@ -197,39 +228,26 @@ class HybridSearchService {
     }
 
     /**
-     * Thực hiện tìm kiếm lai hoàn chỉnh:
-     * 1. Gọi searchLocal ngay tức thì.
-     * 2. Gọi onInstantResult callback trả về kết quả Tầng 1 ngay.
-     * 3. Nếu kết quả < 5, thực hiện Tầng 2 (API Fallback) và merge lại, xếp hạng lại.
+     * Thực hiện tìm kiếm lai hoàn chỉnh
      */
     async executeHybridSearch(query, { onInstantResult, onFinalResult }) {
-        const trimmed = query.trim();
+        const trimmed = (query || '').trim();
         if (!trimmed) {
             if (onFinalResult) onFinalResult({ items: [], didYouMean: null });
             return;
         }
 
+        // Kiểm tra typo từ khóa nhập vào
+        const typoCheck = correctQueryTypos(trimmed);
+
         // --- TẦNG 1: Instant Local Search ---
         const localMatches = this.searchLocal(trimmed);
         if (onInstantResult) {
-            const topFuzzy = localMatches.length > 0 && localMatches[0].isFuzzy ? localMatches[0].name : null;
             onInstantResult({
                 items: localMatches,
-                didYouMean: topFuzzy,
-                isPendingApi: localMatches.length < 5
+                didYouMean: typoCheck.hasTypo ? typoCheck.suggestion : null,
+                isPendingApi: true
             });
-        }
-
-        // Nếu Tầng 1 đã có từ 5 kết quả chuẩn (điểm > 400), không cần spam API
-        const highQualityMatches = localMatches.filter(m => m.searchScore >= 400);
-        if (highQualityMatches.length >= 5) {
-            if (onFinalResult) {
-                onFinalResult({
-                    items: localMatches,
-                    didYouMean: localMatches[0]?.isFuzzy ? localMatches[0].name : null
-                });
-            }
-            return;
         }
 
         // --- TẦNG 2: Debounced API Fallback ---
@@ -248,10 +266,11 @@ class HybridSearchService {
         for (const item of apiItems) {
             if (!mergedMap.has(item.slug)) {
                 const match = scoreMovie(trimmed, item);
-                if (match.score > 60) {
+                // Cho phép ngưỡng điểm linh hoạt để không bỏ sót phim liên quan
+                if (match.score > 40 || typoCheck.hasTypo) {
                     mergedMap.set(item.slug, {
                         ...item,
-                        searchScore: match.score,
+                        searchScore: match.score || 50,
                         isFuzzy: match.isFuzzy,
                         bestMatchField: match.bestMatchField
                     });
@@ -262,27 +281,28 @@ class HybridSearchService {
         const finalResults = Array.from(mergedMap.values());
         finalResults.sort((a, b) => (b.searchScore || 0) - (a.searchScore || 0));
 
-        // Kiểm tra xem có gợi ý "Có phải bạn muốn tìm..." (Fuzzy typo check)
+        // Xác định gợi ý "Có phải bạn muốn tìm..." (Did You Mean)
         let didYouMean = null;
-        if (finalResults.length > 0) {
-            const top = finalResults[0];
+        if (typoCheck.hasTypo && typoCheck.suggestion) {
+            didYouMean = typoCheck.suggestion;
+        } else if (finalResults.length > 0 && finalResults[0].isFuzzy) {
+            const topNorm = normalizeText(finalResults[0].name);
             const qNorm = normalizeText(trimmed);
-            const topNorm = normalizeText(top.name);
-            if (top.isFuzzy && topNorm !== qNorm && top.searchScore >= 200) {
-                didYouMean = top.name;
+            if (topNorm !== qNorm && finalResults[0].searchScore >= 200) {
+                didYouMean = finalResults[0].name;
             }
         }
 
         if (onFinalResult) {
             onFinalResult({
-                items: finalResults.slice(0, 8),
+                items: finalResults.slice(0, 10),
                 didYouMean: didYouMean
             });
         }
     }
 
     /**
-     * Quản lý 5 Lịch sử tìm kiếm gần nhất trong LocalStorage
+     * Quản lý Lịch sử tìm kiếm gần nhất trong LocalStorage
      */
     loadRecentSearches() {
         try {
@@ -294,13 +314,13 @@ class HybridSearchService {
     }
 
     saveRecentSearch(keyword) {
-        const clean = keyword?.trim();
+        const clean = (keyword || '').trim();
         if (!clean || clean.length < 2) return;
 
         let list = this.loadRecentSearches();
         list = list.filter(item => item.toLowerCase() !== clean.toLowerCase());
         list.unshift(clean);
-        list = list.slice(0, 5); // Lưu tối đa 5 lịch sử gần nhất
+        list = list.slice(0, 6);
 
         this.recentSearches = list;
         try {

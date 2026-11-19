@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { cacheManager } from './utils.js';
+import { generateSearchQueries, correctQueryTypos, scoreMovie } from './smartSearch.js';
 
 // Hàm fetch kèm timeout
 export async function fetchWithTimeout(url, timeoutMs = CONFIG.FETCH_TIMEOUT) {
@@ -30,13 +31,57 @@ export async function prefetchMovie(slug, source = CONFIG.SOURCE_NAME) {
     }
 }
 
-// API tìm kiếm phim
+// API tìm kiếm phim thông minh hỗ trợ sửa lỗi chính tả và Fallback
 export async function searchMovies(keyword, page = 1, limit = null) {
+    const cleanKeyword = (keyword || '').trim();
+    if (!cleanKeyword) return [];
+
     const limitQuery = limit ? `&limit=${limit}` : '';
-    const res = await fetchWithTimeout(`${CONFIG.API_BASE}/films/search?keyword=${encodeURIComponent(keyword)}&page=${page}${limitQuery}`);
-    const data = await res.json();
-    const items = data.items || [];
-    items.forEach(m => { m.source = CONFIG.SOURCE_NAME; m.imgDomain = ''; });
+    const searchQueries = generateSearchQueries(cleanKeyword);
+
+    const fetchQuery = async (q) => {
+        try {
+            const res = await fetchWithTimeout(`${CONFIG.API_BASE}/films/search?keyword=${encodeURIComponent(q)}&page=${page}${limitQuery}`);
+            const data = await res.json();
+            return Array.isArray(data.items) ? data.items : [];
+        } catch (e) {
+            return [];
+        }
+    };
+
+    // 1. Thử tìm với từ khóa gốc trước
+    let items = await fetchQuery(searchQueries[0]);
+
+    // 2. Nếu từ khóa gốc có ít hơn 2 kết quả và có các biến thể (typo/alias/sub-query)
+    if (items.length < 2 && searchQueries.length > 1) {
+        const fallbackQueries = searchQueries.slice(1, 4);
+        const fallbackResults = await Promise.all(fallbackQueries.map(q => fetchQuery(q)));
+
+        const seenSlugs = new Set(items.map(m => m.slug));
+        fallbackResults.forEach(subItems => {
+            subItems.forEach(item => {
+                if (item?.slug && !seenSlugs.has(item.slug)) {
+                    seenSlugs.add(item.slug);
+                    items.push(item);
+                }
+            });
+        });
+    }
+
+    // Sắp xếp lại theo điểm tương đồng với từ khóa tìm kiếm
+    if (items.length > 1) {
+        items.sort((a, b) => {
+            const scoreA = scoreMovie(cleanKeyword, a).score;
+            const scoreB = scoreMovie(cleanKeyword, b).score;
+            return scoreB - scoreA;
+        });
+    }
+
+    items.forEach(m => {
+        m.source = CONFIG.SOURCE_NAME;
+        m.imgDomain = '';
+    });
+
     return items;
 }
 

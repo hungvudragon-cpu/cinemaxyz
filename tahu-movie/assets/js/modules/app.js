@@ -1,13 +1,25 @@
-import { CONFIG } from './config.js';
+﻿import { CONFIG } from './config.js';
 import { storage, showToast, startTransition, endTransition, updateURLParams } from './utils.js';
 import { fetchMovieList, searchMovies } from './api.js';
-import { renderMovieCards, renderSkeleton, updateSectionTitle, toggleMobileMenu } from './ui.js';
+import { renderMovieCards, createMovieRailSection, renderSkeleton, updateSectionTitle, toggleMobileMenu } from './ui.js';
 import { initHeroSlider, hideHeroBanner } from './hero.js';
 import { playMovie, closeVideo, toggleDescription, toggleCurrentModalFav, shareCurrentEpisode } from './player.js';
 import { getFavorites, getHistory, clearHistory, removeHistoryItem } from './storage.js';
 import { initRandomPicker, openRandomModal } from './randomPicker.js';
 import { hybridSearchService } from './hybridSearch.js';
-import { highlightMatch } from './smartSearch.js';
+import { highlightMatch, correctQueryTypos } from './smartSearch.js';
+
+// Các từ khóa thịnh hành gợi ý khi tìm kiếm
+const TRENDING_KEYWORDS = [
+    'Dragon Ball Super',
+    'One Piece',
+    'Thám Tử Conan',
+    'Doraemon',
+    'Avatar',
+    'Kimetsu no Yaiba',
+    'Jujutsu Kaisen',
+    'Spider-Man'
+];
 
 // State quản lý toàn bộ trang
 export const state = {
@@ -21,7 +33,27 @@ export const state = {
     hasMoreData: true
 };
 
-// Hàm kích hoạt tìm kiếm phim từ thẻ phim tương tự TMDB hoặc bên ngoài
+// Đồng bộ class active cho cả Desktop Header Nav và Mobile Bottom Nav
+function syncNavActive(activeId) {
+    document.querySelectorAll('.nav-btn, .mobile-bottom-btn').forEach(b => b.classList.remove('active'));
+    if (activeId) {
+        document.getElementById(activeId)?.classList.add('active');
+        const map = {
+            'navHome': 'bnavHome',
+            'navSeries': 'bnavSeries',
+            'navSingle': 'bnavSingle',
+            'navFav': 'bnavFav',
+            'bnavHome': 'navHome',
+            'bnavSeries': 'navSeries',
+            'bnavSingle': 'navSingle',
+            'bnavFav': 'navFav'
+        };
+        const peer = map[activeId];
+        if (peer) document.getElementById(peer)?.classList.add('active');
+    }
+}
+
+// Kích hoạt tìm kiếm phim từ thẻ phim tương tự TMDB hoặc bên ngoài
 window.triggerSearchMovie = function(movieTitle) {
     closeVideo();
     const searchInput = document.getElementById('searchInput');
@@ -40,12 +72,29 @@ export async function loadData(isAppend = false) {
     state.isLoading = true;
 
     const movieGrid = document.getElementById('movie-grid');
+    const railsContainer = document.getElementById('railsContainer');
     const skeleton = document.getElementById('skeletonContainer');
     const endIndicator = document.getElementById('endOfListIndicator');
 
+    const isHomePage = (
+        state.currentKeyword === "" &&
+        state.currentType === "" &&
+        state.currentCategory === "" &&
+        !state.isViewingFavorites &&
+        !state.isViewingHistory &&
+        state.currentPage === 1
+    );
+
     if (!isAppend) {
         startTransition();
+        movieGrid.classList.remove('view-enter');
+        movieGrid.classList.add('view-transitioning');
+        if (railsContainer) {
+            railsContainer.classList.remove('view-enter');
+            railsContainer.classList.add('view-transitioning');
+        }
         movieGrid.innerHTML = '';
+        if (railsContainer) railsContainer.innerHTML = '';
         renderSkeleton(skeleton, 10);
         if (endIndicator) endIndicator.style.display = 'none';
     }
@@ -55,10 +104,24 @@ export async function loadData(isAppend = false) {
 
         if (state.currentKeyword !== "") {
             hideHeroBanner();
+            if (railsContainer) railsContainer.style.display = 'none';
+            movieGrid.style.display = 'grid';
             movies = await searchMovies(state.currentKeyword, state.currentPage);
-            updateSectionTitle(`Kết quả tìm kiếm cho: "${state.currentKeyword}"`);
+
+            const typoCheck = correctQueryTypos(state.currentKeyword);
+            let actionHtml = '';
+            if (typoCheck.hasTypo && typoCheck.suggestion) {
+                actionHtml = `
+                    <div class="search-typo-indicator">
+                        <span>Đã tự động sửa từ khóa sang: <strong>"${typoCheck.suggestion}"</strong></span>
+                    </div>
+                `;
+            }
+            updateSectionTitle(`Kết quả tìm kiếm cho: "${state.currentKeyword}"`, actionHtml);
         } else if (state.currentType !== "") {
             hideHeroBanner();
+            if (railsContainer) railsContainer.style.display = 'none';
+            movieGrid.style.display = 'grid';
             movies = await fetchMovieList({ type: state.currentType, page: state.currentPage });
             const titleMap = {
                 'phim-le': 'Danh Sách Phim Lẻ',
@@ -68,16 +131,70 @@ export async function loadData(isAppend = false) {
             updateSectionTitle(titleMap[state.currentType] || 'Danh Sách Phim');
         } else if (state.currentCategory !== "") {
             hideHeroBanner();
+            if (railsContainer) railsContainer.style.display = 'none';
+            movieGrid.style.display = 'grid';
             movies = await fetchMovieList({ category: state.currentCategory, page: state.currentPage });
             const chip = document.querySelector(`.chip[data-category="${state.currentCategory}"]`);
             const catName = chip ? chip.innerText : state.currentCategory;
             updateSectionTitle(`Thể Loại: ${catName}`);
         } else {
-            // Trang chủ
+            // Trang chủ: Cinematic Rails Layout
             movies = await fetchMovieList({ page: state.currentPage });
-            updateSectionTitle('Phim Mới Cập Nhật');
-            if (state.currentPage === 1 && movies.length > 0) {
-                initHeroSlider(movies, (slug, source) => playMovie(slug, source));
+            updateSectionTitle('Khám Phá Điện Ảnh');
+
+            if (isHomePage) {
+                if (movies.length > 0) {
+                    initHeroSlider(movies, (slug, source) => playMovie(slug, source));
+                }
+
+                if (railsContainer) {
+                    railsContainer.style.display = 'flex';
+                    movieGrid.style.display = 'none';
+                    railsContainer.innerHTML = '';
+
+                    // Rail 1: Phim mới cập nhật
+                    const railLatest = createMovieRailSection({
+                        title: 'Phim Mới Cập Nhật',
+                        movies: movies.slice(0, 14),
+                        onPlayMovie: (slug, source) => playMovie(slug, source)
+                    });
+                    railsContainer.appendChild(railLatest);
+
+                    // Tải bất đồng bộ thêm 3 Rails cho Trang chủ: Phim Bộ, Phim Lẻ, Hoạt Hình
+                    Promise.all([
+                        fetchMovieList({ type: 'phim-bo', page: 1 }).catch(() => []),
+                        fetchMovieList({ type: 'phim-le', page: 1 }).catch(() => []),
+                        fetchMovieList({ type: 'hoat-hinh', page: 1 }).catch(() => [])
+                    ]).then(([seriesList, singlesList, animeList]) => {
+                        if (seriesList.length > 0) {
+                            railsContainer.appendChild(createMovieRailSection({
+                                title: 'Phim Bộ Đang Thịnh Hành',
+                                movies: seriesList.slice(0, 14),
+                                onPlayMovie: (slug, source) => playMovie(slug, source),
+                                onSeeAll: () => filterType('phim-bo', document.getElementById('navSeries'))
+                            }));
+                        }
+                        if (singlesList.length > 0) {
+                            railsContainer.appendChild(createMovieRailSection({
+                                title: 'Phim Lẻ Đỉnh Cao',
+                                movies: singlesList.slice(0, 14),
+                                onPlayMovie: (slug, source) => playMovie(slug, source),
+                                onSeeAll: () => filterType('phim-le', document.getElementById('navSingle'))
+                            }));
+                        }
+                        if (animeList.length > 0) {
+                            railsContainer.appendChild(createMovieRailSection({
+                                title: 'Thế Giới Anime & Hoạt Hình',
+                                movies: animeList.slice(0, 14),
+                                onPlayMovie: (slug, source) => playMovie(slug, source),
+                                onSeeAll: () => filterType('hoat-hinh', document.getElementById('navAnime'))
+                            }));
+                        }
+                    });
+                }
+            } else {
+                if (railsContainer) railsContainer.style.display = 'none';
+                movieGrid.style.display = 'grid';
             }
         }
 
@@ -86,34 +203,62 @@ export async function loadData(isAppend = false) {
         if (!movies || movies.length === 0) {
             state.hasMoreData = false;
             if (isAppend) {
-                if (endIndicator) endIndicator.style.display = 'block';
-            } else {
+                if (endIndicator) endIndicator.style.display = 'flex';
+            } else if (!isHomePage) {
                 movieGrid.innerHTML = `
                     <div class="empty-state" style="grid-column: 1/-1;">
-                        <span class="empty-icon">🎬</span>
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
                         <h3>Không tìm thấy phim phù hợp</h3>
-                        <p>Thử tìm kiếm với từ khóa khác hoặc quay lại trang chủ.</p>
-                        <button class="btn-primary" style="margin: 16px auto 0;" id="emptyHomeBtn">Về Trang Chủ</button>
+                        <p>Thử tìm kiếm với một trong các từ khóa thịnh hành gợi ý dưới đây:</p>
+                        <div class="empty-trending-tags">
+                            ${TRENDING_KEYWORDS.map(kw => `
+                                <button class="empty-tag-btn" data-search="${kw}">${kw}</button>
+                            `).join('')}
+                        </div>
+                        <button class="btn-primary" style="margin: 20px auto 0;" id="emptyHomeBtn">Về Trang Chủ</button>
                     </div>
                 `;
                 document.getElementById('emptyHomeBtn')?.addEventListener('click', resetToHome);
+                movieGrid.querySelectorAll('.empty-tag-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const kw = btn.getAttribute('data-search');
+                        window.triggerSearchMovie(kw);
+                    });
+                });
             }
-        } else {
+        } else if (!isHomePage) {
             renderMovieCards(movieGrid, movies, isAppend, (slug, source) => playMovie(slug, source));
             if (movies.length < 10) {
                 state.hasMoreData = false;
-                if (endIndicator) endIndicator.style.display = 'block';
+                if (endIndicator) endIndicator.style.display = 'flex';
             }
         }
 
-        if (!isAppend) endTransition();
+        if (!isAppend) {
+            setTimeout(() => {
+                movieGrid.classList.remove('view-transitioning');
+                movieGrid.classList.add('view-enter');
+                if (railsContainer) {
+                    railsContainer.classList.remove('view-transitioning');
+                    railsContainer.classList.add('view-enter');
+                }
+            }, 50);
+            endTransition();
+        }
     } catch (err) {
         console.error('Lỗi tải dữ liệu phim:', err);
         if (skeleton) skeleton.innerHTML = '';
         if (!isAppend) {
             movieGrid.innerHTML = `
                 <div class="empty-state" style="grid-column: 1/-1;">
-                    <span class="empty-icon">⚠️</span>
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
                     <h3>Có lỗi xảy ra khi kết nối máy chủ</h3>
                     <p>Vui lòng kiểm tra lại đường truyền mạng hoặc thử tải lại.</p>
                     <button class="btn-primary" style="margin: 16px auto 0;" id="retryBtn">Thử Lại</button>
@@ -140,8 +285,7 @@ export function resetToHome() {
     if (searchInput) searchInput.value = "";
     document.getElementById('searchResultsBox')?.classList.remove('show');
 
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('navHome')?.classList.add('active');
+    syncNavActive('navHome');
 
     document.querySelectorAll('#genreChips .chip').forEach(c => {
         c.classList.toggle('active', c.getAttribute('data-category') === '');
@@ -152,17 +296,33 @@ export function resetToHome() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-export function filterType(type, element) {
-    state.currentType = type;
-    state.currentCategory = "";
+function filterCategory(category, targetChip) {
+    state.currentCategory = category;
     state.currentKeyword = "";
+    state.currentType = "";
     state.currentPage = 1;
     state.isViewingFavorites = false;
     state.isViewingHistory = false;
     state.hasMoreData = true;
 
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    if (element) element.classList.add('active');
+    document.querySelectorAll('#genreChips .chip').forEach(c => c.classList.remove('active'));
+    if (targetChip) targetChip.classList.add('active');
+
+    syncNavActive(null);
+    updateURLParams({ cat: category || null, search: null, type: null });
+    loadData();
+}
+
+function filterType(type, targetNav) {
+    state.currentType = type;
+    state.currentKeyword = "";
+    state.currentCategory = "";
+    state.currentPage = 1;
+    state.isViewingFavorites = false;
+    state.isViewingHistory = false;
+    state.hasMoreData = true;
+
+    syncNavActive(targetNav?.id);
 
     document.querySelectorAll('#genreChips .chip').forEach(c => {
         c.classList.toggle('active', c.getAttribute('data-category') === '');
@@ -172,46 +332,35 @@ export function filterType(type, element) {
     loadData();
 }
 
-export function filterCategory(category, element) {
-    state.currentCategory = category;
-    state.currentType = "";
-    state.currentKeyword = "";
-    state.currentPage = 1;
-    state.isViewingFavorites = false;
-    state.isViewingHistory = false;
-    state.hasMoreData = true;
-
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('#genreChips .chip').forEach(c => c.classList.remove('active'));
-    if (element) element.classList.add('active');
-
-    updateURLParams({ cat: category || null, type: null, search: null });
-    loadData();
-}
-
-export function loadFavoritesView(element) {
+function loadFavoritesView(targetNav) {
     state.isViewingFavorites = true;
     state.isViewingHistory = false;
     state.currentKeyword = "";
-    state.currentType = "";
     state.currentCategory = "";
+    state.currentType = "";
     state.hasMoreData = false;
 
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    if (element) element.classList.add('active');
+    syncNavActive(targetNav?.id);
     hideHeroBanner();
 
-    updateSectionTitle('Danh Sách Phim Yêu Thích');
+    const railsContainer = document.getElementById('railsContainer');
+    if (railsContainer) railsContainer.style.display = 'none';
+
+    updateSectionTitle('Phim Yêu Thích Của Bạn');
+
     const movieGrid = document.getElementById('movie-grid');
+    movieGrid.style.display = 'grid';
     const favs = getFavorites();
 
     if (favs.length === 0) {
         movieGrid.innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1;">
-                <span class="empty-icon">🤍</span>
-                <h3>Chưa có phim yêu thích</h3>
-                <p>Nhấp vào biểu tượng trái tim ở từng phim để lưu lại danh sách xem sau.</p>
-                <button class="btn-primary" style="margin: 16px auto 0;" id="emptyFavHomeBtn">Khám Phá Phim Ngay</button>
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+                <h3>Danh sách yêu thích trống</h3>
+                <p>Bạn chưa lưu bộ phim nào. Hãy bấm biểu tượng trái tim để lưu lại phim bạn thích!</p>
+                <button class="btn-primary" style="margin: 16px auto 0;" id="emptyFavHomeBtn">Khám Phá Phim</button>
             </div>
         `;
         document.getElementById('emptyFavHomeBtn')?.addEventListener('click', resetToHome);
@@ -220,39 +369,45 @@ export function loadFavoritesView(element) {
     }
 }
 
-export function loadHistoryView(element) {
+function loadHistoryView(targetNav) {
     state.isViewingHistory = true;
     state.isViewingFavorites = false;
     state.currentKeyword = "";
-    state.currentType = "";
     state.currentCategory = "";
+    state.currentType = "";
     state.hasMoreData = false;
 
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    if (element) element.classList.add('active');
+    syncNavActive(targetNav?.id);
     hideHeroBanner();
 
-    updateSectionTitle('Lịch Sử Xem Phim', `
-        <button class="btn-secondary" id="clearHistoryBtn" style="padding: 6px 14px; font-size: 12.5px;">
-            <span>🗑️</span> Xóa toàn bộ lịch sử
+    const railsContainer = document.getElementById('railsContainer');
+    if (railsContainer) railsContainer.style.display = 'none';
+
+    updateSectionTitle('Lịch Sử Xem Gần Đây', `
+        <button id="clearHistoryBtn" class="action-pill" style="font-size: 13px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Xóa toàn bộ lịch sử</span>
         </button>
     `);
 
     document.getElementById('clearHistoryBtn')?.addEventListener('click', () => {
         if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử xem phim?')) {
             clearHistory();
-            loadHistoryView(element);
-            showToast('🗑️ Đã xóa sạch lịch sử xem phim');
+            loadHistoryView(targetNav);
         }
     });
 
     const movieGrid = document.getElementById('movie-grid');
+    movieGrid.style.display = 'grid';
     const history = getHistory();
 
     if (history.length === 0) {
         movieGrid.innerHTML = `
             <div class="empty-state" style="grid-column: 1/-1;">
-                <span class="empty-icon">🕒</span>
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
                 <h3>Lịch sử xem trống</h3>
                 <p>Các bộ phim bạn đã xem sẽ tự động được ghi nhớ tại đây.</p>
                 <button class="btn-primary" style="margin: 16px auto 0;" id="emptyHistHomeBtn">Xem Phim Ngay</button>
@@ -271,49 +426,69 @@ function setupSearch() {
     if (!input || !resultsBox) return;
 
     let debounceTimer = null;
-    let selectedIndex = -1; // Hỗ trợ điều hướng bằng phím mũi tên
+    let selectedIndex = -1;
 
-    // Hiển thị lịch sử tìm kiếm khi ô input trống
     const renderRecentSearches = () => {
         const recents = hybridSearchService.loadRecentSearches();
         selectedIndex = -1;
 
-        if (recents.length === 0) {
-            resultsBox.classList.remove('show');
-            resultsBox.innerHTML = '';
-            return;
+        let html = '';
+
+        if (recents.length > 0) {
+            html += `
+                <div class="search-group-header">
+                    <span>Tìm kiếm gần đây</span>
+                    <button class="recent-delete-btn" id="clearAllSearchHistory" style="cursor:pointer; font-size:11px; color:var(--text-muted); background:none; border:none;">Xóa tất cả</button>
+                </div>
+                ${recents.map((item, idx) => `
+                    <div class="recent-item" data-keyword="${item.replace(/"/g, '&quot;')}" data-index="${idx}">
+                        <div class="recent-item-left">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>${item}</span>
+                        </div>
+                        <button class="recent-delete-btn" data-remove="${item.replace(/"/g, '&quot;')}" title="Xóa">&times;</button>
+                    </div>
+                `).join('')}
+            `;
         }
 
-        resultsBox.innerHTML = `
+        // Luôn hiển thị Từ Khóa Thịnh Hành
+        html += `
             <div class="search-group-header">
-                <span>🕒 Tìm kiếm gần đây</span>
-                <button class="search-clear-history-btn" id="clearAllSearchHistory">Xóa tất cả</button>
+                <span>🔥 Từ khóa thịnh hành</span>
             </div>
-            ${recents.map((item, idx) => `
-                <div class="recent-item" data-keyword="${item.replace(/"/g, '&quot;')}" data-index="${idx}">
-                    <div class="recent-item-left">
-                        <span style="opacity:0.6;">🔍</span>
-                        <span>${item}</span>
-                    </div>
-                    <button class="recent-item-remove" data-remove="${item.replace(/"/g, '&quot;')}" title="Xóa">&times;</button>
-                </div>
-            `).join('')}
+            <div class="search-trending-pills">
+                ${TRENDING_KEYWORDS.map(kw => `
+                    <button class="search-trend-chip" data-trend="${kw}">${kw}</button>
+                `).join('')}
+            </div>
         `;
+
+        resultsBox.innerHTML = html;
         resultsBox.classList.add('show');
 
-        // Bắt onmousedown để không bị blur input
         resultsBox.querySelectorAll('.recent-item').forEach(el => {
             el.addEventListener('mousedown', (e) => {
-                if (e.target.closest('.recent-item-remove')) return;
+                if (e.target.closest('.recent-delete-btn')) return;
                 const kw = el.getAttribute('data-keyword');
                 input.value = kw;
-                clearBtn.style.display = 'block';
+                clearBtn.style.display = 'flex';
                 hybridSearchService.saveRecentSearch(kw);
                 triggerMainSearch(kw);
             });
         });
 
-        resultsBox.querySelectorAll('.recent-item-remove').forEach(btn => {
+        resultsBox.querySelectorAll('.search-trend-chip').forEach(chip => {
+            chip.addEventListener('mousedown', () => {
+                const kw = chip.getAttribute('data-trend');
+                input.value = kw;
+                clearBtn.style.display = 'flex';
+                hybridSearchService.saveRecentSearch(kw);
+                triggerMainSearch(kw);
+            });
+        });
+
+        resultsBox.querySelectorAll('.recent-delete-btn[data-remove]').forEach(btn => {
             btn.addEventListener('mousedown', (e) => {
                 e.stopPropagation();
                 const kw = btn.getAttribute('data-remove');
@@ -325,11 +500,10 @@ function setupSearch() {
         document.getElementById('clearAllSearchHistory')?.addEventListener('mousedown', (e) => {
             e.stopPropagation();
             hybridSearchService.clearRecentSearches();
-            resultsBox.classList.remove('show');
+            renderRecentSearches();
         });
     };
 
-    // Render danh sách kết quả tìm kiếm trực tiếp
     const renderSearchResults = ({ items, didYouMean, isPendingApi, query }) => {
         selectedIndex = -1;
 
@@ -347,29 +521,46 @@ function setupSearch() {
 
             resultsBox.innerHTML = `
                 <div class="search-status-bar">
-                    <span>🎬 Không tìm thấy phim phù hợp với "<strong>${query}</strong>"</span>
+                    <span>Không tìm thấy phim phù hợp với "<strong>${query}</strong>"</span>
+                </div>
+                <div class="search-group-header">
+                    <span>💡 Gợi ý từ khóa thịnh hành</span>
+                </div>
+                <div class="search-trending-pills">
+                    ${TRENDING_KEYWORDS.map(kw => `
+                        <button class="search-trend-chip" data-trend="${kw}">${kw}</button>
+                    `).join('')}
                 </div>
             `;
             resultsBox.classList.add('show');
+
+            resultsBox.querySelectorAll('.search-trend-chip').forEach(chip => {
+                chip.addEventListener('mousedown', () => {
+                    const kw = chip.getAttribute('data-trend');
+                    input.value = kw;
+                    clearBtn.style.display = 'flex';
+                    hybridSearchService.saveRecentSearch(kw);
+                    triggerMainSearch(kw);
+                });
+            });
             return;
         }
 
         let html = '';
 
-        // Hiển thị gợi ý "Có phải bạn muốn tìm..." nếu gõ sai chính tả
         if (didYouMean && didYouMean.toLowerCase() !== query.toLowerCase()) {
             html += `
-                <div class="search-did-you-mean">
-                    <span>💡 Có phải bạn muốn tìm:</span>
-                    <strong id="didYouMeanAction" data-suggest="${didYouMean.replace(/"/g, '&quot;')}">${didYouMean}</strong>
+                <div class="search-did-you-mean" id="didYouMeanAction" data-suggest="${didYouMean.replace(/"/g, '&quot;')}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <span>Có phải bạn muốn tìm: <strong>${didYouMean}</strong>?</span>
                 </div>
             `;
         }
 
         html += `
             <div class="search-group-header">
-                <span>Kết quả gợi ý (${items.length})</span>
-                ${isPendingApi ? '<div class="search-spinner" title="Đang mở rộng tìm kiếm..."></div>' : ''}
+                <span>Gợi ý phim (${items.length})</span>
+                ${isPendingApi ? '<div class="search-spinner" title="Đang nạp thêm kết quả..."></div>' : ''}
             </div>
         `;
 
@@ -380,24 +571,30 @@ function setupSearch() {
 
             return `
                 <div class="search-result-item" data-slug="${m.slug}" data-name="${m.name.replace(/"/g, '&quot;')}" data-index="${idx}">
-                    <img class="search-item-thumb" src="${thumb}" alt="${m.name}" loading="lazy" onerror="this.src='${CONFIG.DEFAULT_THUMB}'">
+                    <img class="search-item-thumb" src="${thumb}" alt="${m.name}" loading="lazy" onerror="this.onerror=null; this.src='${CONFIG.DEFAULT_THUMB}'">
                     <div class="search-item-info">
                         <div class="search-item-title">${highlightedTitle}</div>
                         ${highlightedOrig ? `<div class="search-item-orig">${highlightedOrig}</div>` : ''}
                         <div class="search-item-meta">
-                            <span>${m.year || '2024'}</span>
+                            <span>${m.year || '2026'}</span>
                             <span>•</span>
-                            <span class="search-badge-quality">${m.quality || 'HD'}</span>
+                            <span class="search-badge-quality">${m.quality || 'FHD'}</span>
                         </div>
                     </div>
                 </div>
             `;
         }).join('');
 
+        // Thêm nút Xem tất cả kết quả ở chân dropdown
+        html += `
+            <div class="search-see-all-footer" id="searchSeeAllBtn">
+                <span>Xem tất cả kết quả cho "<strong>${query}</strong>" ›</span>
+            </div>
+        `;
+
         resultsBox.innerHTML = html;
         resultsBox.classList.add('show');
 
-        // Bắt sự kiện click chọn phim dùng onmousedown để thực thi trước onblur
         resultsBox.querySelectorAll('.search-result-item').forEach(el => {
             el.addEventListener('mousedown', () => {
                 const slug = el.getAttribute('data-slug');
@@ -408,17 +605,20 @@ function setupSearch() {
             });
         });
 
-        // Click vào "Có phải bạn muốn tìm..."
         document.getElementById('didYouMeanAction')?.addEventListener('mousedown', (e) => {
             const suggested = e.currentTarget.getAttribute('data-suggest');
             input.value = suggested;
-            clearBtn.style.display = 'block';
+            clearBtn.style.display = 'flex';
             hybridSearchService.saveRecentSearch(suggested);
             triggerMainSearch(suggested);
         });
+
+        document.getElementById('searchSeeAllBtn')?.addEventListener('mousedown', () => {
+            hybridSearchService.saveRecentSearch(query);
+            triggerMainSearch(query);
+        });
     };
 
-    // Hàm gọi tìm kiếm chính trang chủ
     const triggerMainSearch = (keyword) => {
         resultsBox.classList.remove('show');
         state.currentKeyword = keyword;
@@ -428,7 +628,6 @@ function setupSearch() {
         loadData();
     };
 
-    // Khi focus vào ô input: nếu trống thì hiện 5 lịch sử gần đây, nếu có chữ thì tìm lại
     input.addEventListener('focus', () => {
         const val = input.value.trim();
         if (!val) {
@@ -441,10 +640,9 @@ function setupSearch() {
         }
     });
 
-    // Khi gõ phím: Xử lý Tìm kiếm Lai 2 Tầng tức thì
     input.addEventListener('input', (e) => {
         const val = e.target.value.trim();
-        clearBtn.style.display = val ? 'block' : 'none';
+        clearBtn.style.display = val ? 'flex' : 'none';
 
         if (!val) {
             if (debounceTimer) clearTimeout(debounceTimer);
@@ -452,14 +650,12 @@ function setupSearch() {
             return;
         }
 
-        // TẦNG 1: Lọc tức thì trên Local Pool (< 10ms)
         hybridSearchService.executeHybridSearch(val, {
             onInstantResult: (instantRes) => {
                 renderSearchResults({ ...instantRes, query: val });
             }
         });
 
-        // TẦNG 2: Debounce 400ms gọi API Fallback an toàn nếu cần thêm dữ liệu
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
             hybridSearchService.executeHybridSearch(val, {
@@ -467,10 +663,9 @@ function setupSearch() {
                     renderSearchResults({ ...finalRes, query: val });
                 }
             });
-        }, 400);
+        }, 250);
     });
 
-    // Nút xóa chữ trong ô tìm kiếm
     clearBtn?.addEventListener('click', () => {
         input.value = '';
         clearBtn.style.display = 'none';
@@ -478,7 +673,6 @@ function setupSearch() {
         resetToHome();
     });
 
-    // Hỗ trợ phím mũi tên Lên/Xuống + Enter
     input.addEventListener('keydown', (e) => {
         const items = resultsBox.querySelectorAll('.search-result-item, .recent-item');
         if (items.length === 0 || !resultsBox.classList.contains('show')) {
@@ -513,7 +707,7 @@ function setupSearch() {
                 } else if (selected.classList.contains('recent-item')) {
                     const kw = selected.getAttribute('data-keyword');
                     input.value = kw;
-                    clearBtn.style.display = 'block';
+                    clearBtn.style.display = 'flex';
                     hybridSearchService.saveRecentSearch(kw);
                     triggerMainSearch(kw);
                 }
@@ -538,7 +732,6 @@ function setupSearch() {
         });
     }
 
-    // Đóng dropdown khi click ra ngoài container
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-container')) {
             resultsBox.classList.remove('show');
@@ -551,7 +744,7 @@ function setupScrollEvents() {
     const header = document.getElementById('mainHeader');
 
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 80) {
+        if (window.scrollY > 60) {
             header?.classList.add('scrolled');
         } else {
             header?.classList.remove('scrolled');
@@ -563,8 +756,17 @@ function setupScrollEvents() {
             if (topBtn) topBtn.style.display = 'none';
         }
 
-        // Infinite scroll tải thêm trang
-        if (!state.isViewingHistory && !state.isViewingFavorites && !state.isLoading && state.hasMoreData) {
+        // Infinite scroll tải thêm trang khi ở chế độ Grid (không ở Trang chủ Rails)
+        const isHomePage = (
+            state.currentKeyword === "" &&
+            state.currentType === "" &&
+            state.currentCategory === "" &&
+            !state.isViewingFavorites &&
+            !state.isViewingHistory &&
+            state.currentPage === 1
+        );
+
+        if (!isHomePage && !state.isViewingHistory && !state.isViewingFavorites && !state.isLoading && state.hasMoreData) {
             if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 450) {
                 state.currentPage++;
                 loadData(true);
@@ -578,22 +780,43 @@ function setupScrollEvents() {
 }
 
 function setupEventListeners() {
-    document.querySelectorAll('.logo, #navHome').forEach(el => {
-        el.addEventListener('click', resetToHome);
+    document.querySelectorAll('.logo, #navHome, #bnavHome').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleMobileMenu(false);
+            resetToHome();
+        });
     });
 
-    document.querySelector('.mobile-toggle')?.addEventListener('click', () => toggleMobileMenu(true));
+    document.getElementById('mobileMenuBtn')?.addEventListener('click', () => toggleMobileMenu(true));
     document.getElementById('mobileOverlay')?.addEventListener('click', () => toggleMobileMenu(false));
     document.getElementById('mobileCloseBtn')?.addEventListener('click', () => toggleMobileMenu(false));
 
-    document.getElementById('navSingle')?.addEventListener('click', (e) => filterType('phim-le', e.currentTarget));
-    document.getElementById('navSeries')?.addEventListener('click', (e) => filterType('phim-bo', e.currentTarget));
-    document.getElementById('navAnime')?.addEventListener('click', (e) => filterType('hoat-hinh', e.currentTarget));
-    document.getElementById('navFav')?.addEventListener('click', (e) => loadFavoritesView(e.currentTarget));
-    document.getElementById('navHistory')?.addEventListener('click', (e) => loadHistoryView(e.currentTarget));
+    // Nav Desktop & Mobile Bottom
+    document.getElementById('navSingle')?.addEventListener('click', (e) => { toggleMobileMenu(false); filterType('phim-le', e.currentTarget); });
+    document.getElementById('bnavSingle')?.addEventListener('click', (e) => { filterType('phim-le', e.currentTarget); });
+
+    document.getElementById('navSeries')?.addEventListener('click', (e) => { toggleMobileMenu(false); filterType('phim-bo', e.currentTarget); });
+    document.getElementById('bnavSeries')?.addEventListener('click', (e) => { filterType('phim-bo', e.currentTarget); });
+
+    document.getElementById('navAnime')?.addEventListener('click', (e) => { toggleMobileMenu(false); filterType('hoat-hinh', e.currentTarget); });
+
+    document.getElementById('navFav')?.addEventListener('click', (e) => { toggleMobileMenu(false); loadFavoritesView(e.currentTarget); });
+    document.getElementById('bnavFav')?.addEventListener('click', (e) => { loadFavoritesView(e.currentTarget); });
+
+    document.getElementById('navHistory')?.addEventListener('click', (e) => { toggleMobileMenu(false); loadHistoryView(e.currentTarget); });
+
+    // Mobile Bottom Nav Search Trigger
+    document.getElementById('bnavSearch')?.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const input = document.getElementById('searchInput');
+        if (input) {
+            setTimeout(() => input.focus(), 250);
+        }
+    });
 
     // Nút mở modal "Hôm nay xem gì?"
-    document.getElementById('navRandomPicker')?.addEventListener('click', openRandomModal);
+    document.getElementById('navRandomPicker')?.addEventListener('click', () => { toggleMobileMenu(false); openRandomModal(); });
     document.getElementById('randomDiceQuickBtn')?.addEventListener('click', openRandomModal);
 
     document.querySelectorAll('#genreChips .chip').forEach(chip => {
@@ -630,10 +853,23 @@ function restoreCurrentWatch() {
     } catch(e) {}
 }
 
+function handleSplashIntro() {
+    const splash = document.getElementById('pageSplashIntro');
+    if (!splash) return;
+    setTimeout(() => {
+        splash.classList.add('hide');
+        document.body.classList.add('page-entered');
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 550);
+    }, 650);
+}
+
 function initApp() {
+    handleSplashIntro();
     initRandomPicker();
     setupEventListeners();
-    hybridSearchService.initLocalPool(); // Tự động nạp trước Local Movie Pool (Page 1 & 2)
+    hybridSearchService.initLocalPool();
 
     try {
         const urlParams = new URLSearchParams(window.location.search);

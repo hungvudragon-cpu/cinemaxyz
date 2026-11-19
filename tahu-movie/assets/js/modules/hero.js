@@ -1,32 +1,39 @@
-import { getSafeImageUrl } from './utils.js';
+﻿import { getSafeImageUrl } from './utils.js';
 import { getTMDBDetails } from './tmdb.js';
 
 let bannerMovies = [];
 let currentBannerIndex = 0;
 let bannerInterval = null;
 let onPlayMovieCallback = null;
+let activeBackdropLayer = 'A'; // 'A' or 'B'
 
 export function initHeroSlider(movies, onPlayMovie) {
     onPlayMovieCallback = onPlayMovie;
-    bannerMovies = movies.slice(0, 5);
+    bannerMovies = movies.slice(0, 6);
     currentBannerIndex = 0;
+    activeBackdropLayer = 'A';
+
     const banner = document.getElementById('heroBanner');
     if (!banner) return;
     banner.style.display = 'flex';
     document.body.classList.add('hero-active-page');
 
     const dotsContainer = document.getElementById('heroDots');
-    dotsContainer.innerHTML = '';
-    bannerMovies.forEach((_, i) => {
-        const dot = document.createElement('div');
-        dot.className = 'dot' + (i === 0 ? ' active' : '');
-        dot.onclick = () => {
-            currentBannerIndex = i;
-            updateHeroBannerDisplay(currentBannerIndex);
-            resetBannerInterval();
-        };
-        dotsContainer.appendChild(dot);
-    });
+    if (dotsContainer) {
+        dotsContainer.innerHTML = '';
+        bannerMovies.forEach((_, i) => {
+            const dot = document.createElement('div');
+            dot.className = 'dot' + (i === 0 ? ' active' : '');
+            dot.setAttribute('role', 'tab');
+            dot.setAttribute('aria-label', `Banner slide ${i + 1}`);
+            dot.onclick = () => {
+                currentBannerIndex = i;
+                updateHeroBannerDisplay(currentBannerIndex);
+                resetBannerInterval();
+            };
+            dotsContainer.appendChild(dot);
+        });
+    }
 
     updateHeroBannerDisplay(currentBannerIndex);
     resetBannerInterval();
@@ -46,30 +53,58 @@ async function updateHeroBannerDisplay(index) {
     const content = document.querySelector('.hero-content');
     
     if (content) {
-        content.style.animation = 'none';
-        content.offsetHeight;
-        content.style.animation = null;
+        content.classList.remove('animate-in');
+        void content.offsetWidth; // trigger reflow
+        content.classList.add('animate-in');
     }
 
     document.getElementById('heroTitle').innerText = movie.name;
     document.getElementById('heroDesc').innerText = movie.bannerDesc || "Đang tải tóm tắt phim...";
     
     const bgUrl = movie.bannerBg || getSafeImageUrl(movie);
-    document.getElementById('heroBackdrop').style.backgroundImage = `url('${bgUrl}')`;
     
-    document.getElementById('heroBadgeQuality').innerText = movie.quality || "HD";
-    document.getElementById('heroYear').innerText = movie.year || "2024";
-    document.getElementById('heroLang').innerText = movie.lang || "Vietsub";
+    // Cross-fade mượt mà giữa 2 backdrop layer (A và B)
+    const layerA = document.getElementById('heroBackdropA');
+    const layerB = document.getElementById('heroBackdropB');
+
+    if (layerA && layerB) {
+        if (activeBackdropLayer === 'A') {
+            // Đang ở A, nạp sang B và kích hoạt B
+            layerB.style.backgroundImage = `url('${bgUrl}')`;
+            layerB.classList.add('active');
+            layerA.classList.remove('active');
+            activeBackdropLayer = 'B';
+        } else {
+            // Đang ở B, nạp sang A và kích hoạt A
+            layerA.style.backgroundImage = `url('${bgUrl}')`;
+            layerA.classList.add('active');
+            layerB.classList.remove('active');
+            activeBackdropLayer = 'A';
+        }
+    }
+    
+    const qualEl = document.getElementById('heroBadgeQuality');
+    if (qualEl) qualEl.innerText = movie.quality || "FHD";
+    
+    const yearEl = document.getElementById('heroYear');
+    if (yearEl) yearEl.innerText = movie.year || "2026";
+    
+    const langEl = document.getElementById('heroLang');
+    if (langEl) langEl.innerText = movie.lang || movie.language || "Vietsub";
 
     const playAction = () => {
         if (onPlayMovieCallback) onPlayMovieCallback(movie.slug, movie.source);
     };
 
-    document.getElementById('heroPlayBtn').onclick = playAction;
-    document.getElementById('heroInfoBtn').onclick = playAction;
+    const playBtn = document.getElementById('heroPlayBtn');
+    if (playBtn) playBtn.onclick = playAction;
+
+    const infoBtn = document.getElementById('heroInfoBtn');
+    if (infoBtn) infoBtn.onclick = playAction;
 
     document.querySelectorAll('.dot').forEach((d, i) => {
         d.classList.toggle('active', i === index);
+        d.setAttribute('aria-selected', i === index ? 'true' : 'false');
     });
 
     if (!movie.detailFetched) {
@@ -94,11 +129,13 @@ async function updateHeroBannerDisplay(index) {
             movie.detailFetched = true;
 
             if (currentBannerIndex === index) {
-                document.getElementById('heroBackdrop').style.backgroundImage = `url('${betterImg}')`;
-                document.getElementById('heroDesc').innerText = movie.bannerDesc;
+                const activeLayerEl = activeBackdropLayer === 'A' ? layerA : layerB;
+                if (activeLayerEl) activeLayerEl.style.backgroundImage = `url('${betterImg}')`;
+                const descEl = document.getElementById('heroDesc');
+                if (descEl) descEl.innerText = movie.bannerDesc;
             }
         } catch(e) {
-            movie.bannerDesc = "Bộ phim đặc sắc với nội dung hấp dẫn.";
+            movie.bannerDesc = "Bộ phim đặc sắc với nội dung hấp dẫn chuẩn điện ảnh.";
             movie.detailFetched = true;
         }
     }
@@ -109,7 +146,7 @@ function resetBannerInterval() {
     bannerInterval = setInterval(() => {
         currentBannerIndex = (currentBannerIndex + 1) % bannerMovies.length;
         updateHeroBannerDisplay(currentBannerIndex);
-    }, 6000);
+    }, 7000);
 }
 
 let eventsBound = false;

@@ -1,0 +1,487 @@
+/**
+ * TAHU CINEMA - DEDICATED MOBILE & TABLET STYLESHEET
+ * File CSS chuyên biệt dành cho giao diện Di Động & Máy Tính Bảng.
+ * Tách riêng để người dùng cực kỳ thuận tiện tùy chỉnh và bảo trì.
+ */
+
+/* ==========================================================================
+   1. TABLET & MÀN HÌNH NHỎ (<= 1240px & <= 1024px)
+   Khắc phục triệt để lỗi che mất góc phải của Modal và Thanh Tìm Kiếm
+   ========================================================================== */
+@media (max-width: 1240px) {
+    /* Modal xem phim: Tự động chuyển thành 1 cột dọc thanh thoát, không bao giờ bị cắt mép phải */
+    .theater-content-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 24px !important;
+        width: 100% !important;
+    }
+
+    .theater-side-col, .theater-main-col {
+        min-width: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .theater-side-col {
+        margin-top: 8px;
+    }
+
+    .meta-sidebar-card, .tmdb-similar-card-box {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    .theater-modal .modal-box {
+        width: 100% !important;
+        max-width: min(100%, calc(100vw - 32px)) !important;
+        margin: 12px auto 40px !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Thu gọn khoảng cách các nút trên header để không đẩy thanh tìm kiếm lọt ra ngoài */
+    .header-inner {
+        padding: 0 16px !important;
+        gap: 12px !important;
+    }
+
+    .header-left {
+        gap: 14px !important;
+        min-width: 0 !important;
+    }
+
+    .nav-btn {
+        padding: 6px 10px !important;
+        font-size: 12.5px !important;
+    }
+
+    .search-container {
+        width: 220px !important;
+    }
+
+    .search-container:focus-within {
+        width: 260px !important;
+        max-width: calc(100vw - 36px) !important;
+    }
+
+    .search-dropdown {
+        right: 0 !important;
+        left: auto !important;
+        width: min(340px, calc(100vw - 32px)) !important;
+        max-width: calc(100vw - 32px) !important;
+        box-sizing: border-box !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    .hero-banner {
+        height: min(72vh, 600px);
+        min-height: 480px;
+    }
+
+    .hero-container {
+        padding: 0 20px 48px;
+    }
+
+    .hero-title {
+        font-size: clamp(2rem, 4vw, 3rem);
+    }
+}
+
+/* ==========================================================================
+   2. MOBILE GIAO DIỆN CHÍNH (<= 768px)
+   Tối ưu toàn diện cho điện thoại thông minh
+   ========================================================================== */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px));
+        font-size: 14px;
+    }
+
+    .container {
+        padding: 0 14px;
+    }
+
+    /* --------------------------------------------------------------------------
+       2.1. HEADER & SEARCH TRÊN MOBILE (KHÔNG BỊ MẤT GÓC PHẢI)
+       -------------------------------------------------------------------------- */
+    #mainHeader {
+        height: 60px;
+    }
+
+    .header-inner {
+        padding: 0 14px !important;
+        gap: 12px;
+    }
+
+    .header-left {
+        gap: 10px !important;
+    }
+
+    .mobile-toggle {
+        display: flex !important;
+    }
+
+    .logo-main {
+        font-size: 21px !important;
+    }
+
+    .logo-sub {
+        font-size: 9px !important;
+        letter-spacing: 0.2em !important;
+    }
+
+    /* Thanh tìm kiếm trên mobile: Bám chắc mép phải có đệm an toàn */
+    .header-right {
+        margin-left: auto;
+    }
+
+    .search-container {
+        width: 180px !important;
+        position: relative;
+    }
+
+    .search-container:focus-within {
+        width: clamp(200px, calc(100vw - 120px), 280px) !important;
+    }
+
+    .search-box {
+        height: 38px;
+        padding: 0 12px;
+    }
+
+    .search-box input {
+        font-size: 13px;
+    }
+
+    /* Dropdown tìm kiếm trên Mobile: Căn chuẩn mép phải, không vượt quá màn hình */
+    .search-dropdown {
+        position: fixed !important;
+        top: 64px !important;
+        left: 12px !important;
+        right: 12px !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: calc(80vh - 70px) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95) !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    }
+
+    /* --------------------------------------------------------------------------
+       2.2. MOBILE DRAWER NAVIGATION MENU
+       -------------------------------------------------------------------------- */
+    .nav-menu {
+        position: fixed !important;
+        top: 0 !important;
+        left: -310px !important;
+        width: 290px !important;
+        height: 100vh !important;
+        background: rgba(14, 17, 26, 0.98) !important;
+        backdrop-filter: blur(28px) !important;
+        -webkit-backdrop-filter: blur(28px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 24px 18px !important;
+        z-index: 120 !important;
+        transition: left 0.32s var(--ease-cinematic) !important;
+        box-shadow: 10px 0 35px rgba(0, 0, 0, 0.8) !important;
+        gap: 8px !important;
+    }
+
+    .nav-menu.open {
+        left: 0 !important;
+    }
+
+    .mobile-menu-header {
+        display: flex !important;
+        margin-bottom: 16px;
+    }
+
+    .nav-btn {
+        padding: 12px 16px !important;
+        border-radius: 10px !important;
+        font-size: 14.5px !important;
+        justify-content: flex-start !important;
+    }
+
+    /* --------------------------------------------------------------------------
+       2.3. MOBILE BOTTOM APP BAR (THANH ĐIỀU HƯỚNG ĐÁY)
+       -------------------------------------------------------------------------- */
+    .mobile-bottom-bar {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--bottom-bar-h);
+        background: rgba(18, 20, 28, 0.94);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        z-index: 95;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 8px;
+    }
+
+    .mobile-bottom-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-radius: 8px;
+        transition: color 0.2s ease;
+    }
+
+    .mobile-bottom-btn.active, .mobile-bottom-btn:hover {
+        color: #ffffff;
+    }
+
+    .mobile-bottom-btn.active svg {
+        color: var(--primary);
+    }
+
+    /* --------------------------------------------------------------------------
+       2.4. HERO BILLBOARD BANNER TRÊN MOBILE
+       -------------------------------------------------------------------------- */
+    .hero-banner {
+        height: min(62vh, 480px) !important;
+        min-height: 400px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .hero-container {
+        padding: 0 14px 28px !important;
+    }
+
+    .hero-content {
+        gap: 10px !important;
+        max-width: 100% !important;
+    }
+
+    .hero-title {
+        font-size: clamp(1.7rem, 6vw, 2.2rem) !important;
+        line-height: 1.2 !important;
+    }
+
+    .hero-meta {
+        gap: 8px !important;
+        font-size: 12.5px !important;
+    }
+
+    .hero-desc {
+        -webkit-line-clamp: 2 !important;
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+    }
+
+    .hero-actions {
+        gap: 10px !important;
+        margin-top: 6px !important;
+    }
+
+    .btn-netflix-play {
+        padding: 10px 22px !important;
+        font-size: 14.5px !important;
+        border-radius: 8px !important;
+    }
+
+    .btn-netflix-info {
+        padding: 10px 18px !important;
+        font-size: 14.5px !important;
+        border-radius: 8px !important;
+    }
+
+    .hero-right-meta {
+        bottom: 25% !important;
+    }
+
+    .hero-dots {
+        bottom: 14px !important;
+        right: 14px !important;
+    }
+
+    /* --------------------------------------------------------------------------
+       2.5. THỂ LOẠI & THẺ PHIM TRÊN MOBILE
+       -------------------------------------------------------------------------- */
+    .filter-section {
+        padding: 2px 0 14px !important;
+    }
+
+    .chip {
+        padding: 7px 15px !important;
+        font-size: 12.5px !important;
+    }
+
+    #movie-grid, #skeletonContainer {
+        grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)) !important;
+        gap: 16px 10px !important;
+    }
+
+    .movie-card.netflix-card {
+        border-radius: 10px !important;
+    }
+
+    .card-img-wrapper {
+        border-radius: 10px 10px 0 0 !important;
+    }
+
+    .card-details {
+        padding: 8px 8px 10px !important;
+        border-radius: 0 0 10px 10px !important;
+    }
+
+    .card-title {
+        font-size: 12.5px !important;
+        height: 34px !important;
+    }
+
+    .card-sub {
+        font-size: 11px !important;
+    }
+
+    .movie-rail {
+        gap: 10px !important;
+        padding: 10px 0 18px !important;
+    }
+
+    .movie-rail .movie-card {
+        flex: 0 0 142px !important;
+        width: 142px !important;
+    }
+
+    /* Ẩn nút cuộn mép trên mobile vì người dùng vuốt cảm ứng */
+    .netflix-slider-btn {
+        display: none !important;
+    }
+
+    /* --------------------------------------------------------------------------
+       2.6. MODAL XEM PHIM TRÊN MOBILE (KHÔNG BỊ MẤT GÓC PHẢI)
+       -------------------------------------------------------------------------- */
+    .modal {
+        padding: 10px 8px calc(var(--bottom-bar-h) + 24px) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .theater-modal .modal-box {
+        border-radius: 16px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 6px auto 30px !important;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Nút đóng modal luôn nằm nổi bật ở góc phải trên cùng */
+    .modal-close {
+        top: 10px !important;
+        right: 10px !important;
+        width: 36px !important;
+        height: 36px !important;
+        z-index: 100 !important;
+        background: rgba(10, 12, 18, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    }
+
+    .theater-player-frame {
+        border-radius: 16px 16px 0 0 !important;
+    }
+
+    .modal-body {
+        padding: 16px 14px 28px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .theater-content-grid, .theater-main-col, .theater-side-col {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        min-width: 0 !important;
+    }
+
+    .detail-title {
+        font-size: 19px !important;
+    }
+
+    .meta-pill-group {
+        gap: 6px !important;
+    }
+
+    .meta-pill {
+        font-size: 11px !important;
+        padding: 2px 8px !important;
+    }
+
+    .controls-panel {
+        padding: 12px !important;
+        border-radius: 12px !important;
+    }
+
+    .episode-list {
+        grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)) !important;
+        gap: 6px !important;
+        max-height: 190px !important;
+    }
+
+    .ep-btn {
+        padding: 7px 8px !important;
+        font-size: 12px !important;
+        border-radius: 6px !important;
+    }
+
+    .back-to-top {
+        bottom: calc(var(--bottom-bar-h) + 14px) !important;
+        right: 14px !important;
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    .toast {
+        bottom: calc(var(--bottom-bar-h) + 16px) !important;
+    }
+}
+
+/* ==========================================================================
+   3. MÀN HÌNH SIÊU NHỎ (<= 480px)
+   ========================================================================== */
+@media (max-width: 480px) {
+    .header-inner {
+        padding: 0 10px !important;
+    }
+
+    .logo-titles .logo-sub {
+        display: none !important;
+    }
+
+    .search-container {
+        width: 140px !important;
+    }
+
+    .search-container:focus-within {
+        width: clamp(170px, calc(100vw - 100px), 230px) !important;
+    }
+
+    #movie-grid, #skeletonContainer {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px 8px !important;
+    }
+
+    .hero-actions .btn-netflix-play, 
+    .hero-actions .btn-netflix-info {
+        padding: 8px 16px !important;
+        font-size: 13.5px !important;
+    }
+}

@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js';
+﻿import { CONFIG } from './config.js';
 import { storage, showToast } from './utils.js';
 
 // Lấy danh sách yêu thích
@@ -31,7 +31,6 @@ export function toggleFavorite(movieData, btnEl = null, onStateChange = null) {
 
     if (btnEl) {
         btnEl.classList.toggle('active', isFavNow);
-        btnEl.innerText = isFavNow ? '❤' : '🤍';
     }
 
     if (onStateChange) {
@@ -93,4 +92,17 @@ export function removeHistoryItem(slug) {
 
 export function clearFavoritesStorage() {
     storage.remove(CONFIG.STORAGE_KEYS.FAVORITES);
+}
+
+// Theo dõi tập đã xem
+export function getWatchedEpisodes(slug) {
+    return storage.get(`cinemax_watched_${slug}`, []);
+}
+
+export function addWatchedEpisode(slug, epIndex) {
+    let watched = getWatchedEpisodes(slug);
+    if (!watched.includes(epIndex)) {
+        watched.push(epIndex);
+        storage.set(`cinemax_watched_${slug}`, watched);
+    }
 }

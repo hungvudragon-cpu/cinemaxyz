@@ -64,15 +64,24 @@ export function showToast(message) {
     }, 2600);
 }
 
-// Chuyển cảnh mượt mà
+// Chuyển cảnh mượt mà phong cách Netflix Top Progress Bar
 export function startTransition() {
-    const overlay = document.getElementById('transitionOverlay');
-    if (overlay) overlay.classList.add('active');
+    const loader = document.getElementById('netflixTopLoader');
+    if (loader) {
+        loader.classList.remove('finished');
+        loader.classList.add('loading');
+    }
 }
 
 export function endTransition() {
-    const overlay = document.getElementById('transitionOverlay');
-    if (overlay) overlay.classList.remove('active');
+    const loader = document.getElementById('netflixTopLoader');
+    if (loader) {
+        loader.classList.remove('loading');
+        loader.classList.add('finished');
+        setTimeout(() => {
+            loader.classList.remove('finished');
+        }, 400);
+    }
 }
 
 // Xử lý link ảnh an toàn
