@@ -160,13 +160,17 @@ async function handleRoll() {
         // Chọn ngẫu nhiên 1 phim trong danh sách trang đó
         const luckyMovie = movies[Math.floor(Math.random() * movies.length)];
 
-        // Tải chi tiết và kiểm tra TMDB để lấy rating & backdrop đẹp
-        const [detailData, tmdbData] = await Promise.all([
-            fetchMovieDetail(luckyMovie.slug).catch(() => null),
-            getTMDBDetails(luckyMovie.name, luckyMovie.original_name, luckyMovie.year).catch(() => null)
-        ]);
-
+        // Tải chi tiết và kiểm tra TMDB để lấy rating & backdrop đẹp chính xác
+        const detailData = await fetchMovieDetail(luckyMovie.slug).catch(() => null);
         const movieItem = detailData?.movie || detailData?.item || luckyMovie;
+        const tmdbData = await getTMDBDetails({
+            title: movieItem.name || luckyMovie.name,
+            originalTitle: movieItem.original_name || luckyMovie.original_name,
+            year: movieItem.year || luckyMovie.year,
+            tmdb: movieItem.tmdb || luckyMovie.tmdb,
+            imdb: movieItem.imdb || luckyMovie.imdb,
+            type: movieItem.type || luckyMovie.type
+        }).catch(() => null);
         renderLuckyCard(cardEl, movieItem, tmdbData);
 
         setTimeout(() => {

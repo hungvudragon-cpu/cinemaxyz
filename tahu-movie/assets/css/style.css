@@ -2086,6 +2086,37 @@ img {
     background: rgba(255, 255, 255, 0.14);
 }
 
+.back-text-short {
+    display: none;
+}
+
+.btn-player-fullscreen {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-player-fullscreen:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-player-fullscreen.is-fullscreen {
+    color: #ffffff;
+    background: rgba(229, 9, 20, 0.25);
+    border-color: rgba(229, 9, 20, 0.5);
+}
+
 .video-player-wrap {
     position: relative;
     z-index: 2;
@@ -2100,6 +2131,61 @@ img {
     width: 100%;
     height: 100%;
     border: none;
+}
+
+/* Toàn màn hình chuẩn điện ảnh & tự xoay ngang full màn hình */
+.video-player-wrap:fullscreen,
+.video-player-wrap:-webkit-full-screen,
+.video-player-wrap:-moz-full-screen,
+.video-player-wrap:-ms-fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    max-width: 100vw !important;
+    aspect-ratio: auto !important;
+    background: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 999999 !important;
+}
+
+.video-player-wrap:fullscreen .player-back-bar,
+.video-player-wrap:-webkit-full-screen .player-back-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+    border-bottom: none;
+    padding: 12px 18px;
+    opacity: 0.95;
+    transition: opacity 0.3s ease;
+}
+
+.video-player-wrap:fullscreen .plyr-wrapper,
+.video-player-wrap:fullscreen #videoIframe,
+.video-player-wrap:-webkit-full-screen .plyr-wrapper,
+.video-player-wrap:-webkit-full-screen #videoIframe {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    flex: 1 1 auto !important;
+}
+
+#videoIframe:fullscreen,
+#videoIframe:-webkit-full-screen,
+.plyr-wrapper:fullscreen,
+.plyr-wrapper:-webkit-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    background: #000000 !important;
+    border: none !important;
 }
 
 .modal-body {

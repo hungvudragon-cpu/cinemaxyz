@@ -116,7 +116,14 @@ async function updateHeroBannerDisplay(index) {
             
             // Tìm ảnh backdrop 4K từ TMDB để Hero Banner hiển thị sắc nét nhất
             try {
-                const tmdb = await getTMDBDetails(movie.name, detail.original_name || movie.original_name, movie.year);
+                const tmdb = await getTMDBDetails({
+                    title: movie.name,
+                    originalTitle: detail.original_name || movie.original_name,
+                    year: movie.year,
+                    tmdb: detail.tmdb || movie.tmdb,
+                    imdb: detail.imdb || movie.imdb,
+                    type: detail.type || movie.type
+                });
                 if (tmdb?.backdrop4k) {
                     betterImg = tmdb.backdrop4k;
                 }

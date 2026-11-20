@@ -1,8 +1,10 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const PORT = 3000;
+const HOST = '0.0.0.0';
 const BASE_DIR = path.resolve(__dirname);
 
 const MIME_TYPES = {
@@ -48,6 +50,15 @@ const server = http.createServer((req, res) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+    console.log(`Server running at:`);
+    console.log(`- Local:   http://localhost:${PORT}`);
+    const ifaces = os.networkInterfaces();
+    for (const [name, addrs] of Object.entries(ifaces)) {
+        for (const a of addrs) {
+            if (a.family === 'IPv4' && !a.internal) {
+                console.log(`- Network (${name}): http://${a.address}:${PORT}`);
+            }
+        }
+    }
 });

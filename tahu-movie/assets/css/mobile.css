@@ -95,6 +95,12 @@
    Tối ưu toàn diện cho điện thoại thông minh
    ========================================================================== */
 @media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
     body {
         padding-bottom: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom, 0px));
         font-size: 14px;
@@ -411,16 +417,19 @@
        2.6. MODAL XEM PHIM TRÊN MOBILE (KHÔNG BỊ MẤT GÓC PHẢI)
        -------------------------------------------------------------------------- */
     .modal {
-        padding: 10px 8px calc(var(--bottom-bar-h) + 24px) !important;
+        padding: 6px 6px calc(var(--bottom-bar-h) + 20px) !important;
         box-sizing: border-box !important;
         overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .theater-modal .modal-box {
         border-radius: 16px !important;
         width: 100% !important;
         max-width: 100% !important;
-        margin: 6px auto 30px !important;
+        min-width: 0 !important;
+        margin: 4px auto 24px !important;
         box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95) !important;
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
         box-sizing: border-box !important;
@@ -429,17 +438,91 @@
 
     /* Nút đóng modal luôn nằm nổi bật ở góc phải trên cùng */
     .modal-close {
-        top: 10px !important;
-        right: 10px !important;
-        width: 36px !important;
-        height: 36px !important;
+        top: 8px !important;
+        right: 8px !important;
+        width: 32px !important;
+        height: 32px !important;
         z-index: 100 !important;
         background: rgba(10, 12, 18, 0.85) !important;
         border: 1px solid rgba(255, 255, 255, 0.25) !important;
     }
 
-    .theater-player-frame {
+    .theater-player-frame, .video-player-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         border-radius: 16px 16px 0 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .player-back-bar {
+        padding: 6px 8px !important;
+        padding-right: 46px !important;
+        gap: 6px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        min-width: 0 !important;
+    }
+
+    .back-text-full {
+        display: none !important;
+    }
+
+    .back-text-short {
+        display: inline !important;
+    }
+
+    .btn-back-overview {
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+        gap: 4px !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+    }
+
+    .btn-player-fullscreen {
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+        gap: 4px !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+    }
+
+    .video-player-wrap:fullscreen .player-back-bar,
+    .video-player-wrap:-webkit-full-screen .player-back-bar {
+        padding: 10px 14px calc(10px + env(safe-area-inset-top, 0px)) !important;
+    }
+
+    /* Thanh Quick Nav tập phim trên Mobile */
+    .player-quick-nav {
+        padding: 8px 10px !important;
+        gap: 6px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        min-width: 0 !important;
+    }
+
+    .quick-ep-btn {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        gap: 4px !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+    }
+
+    .quick-ep-current {
+        font-size: 11px !important;
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        justify-content: center !important;
     }
 
     .modal-body {

@@ -20,11 +20,172 @@ const videoPlayer = document.getElementById('videoPlayer');
 const plyrWrapper = document.getElementById('plyrWrapper');
 const videoIframe = document.getElementById('videoIframe');
 
+let isOrientationLocked = false;
+
+/**
+ * Xoay ngang màn hình (Landscape) khi ấn toàn màn hình trên Mobile
+ */
+export async function lockLandscape() {
+    try {
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || 
+            (window.matchMedia && window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches) ||
+            ('ontouchstart' in window && window.innerWidth <= 1024);
+
+        if (!isMobile) return;
+
+        if (screen.orientation && typeof screen.orientation.lock === 'function') {
+            await screen.orientation.lock('landscape');
+            isOrientationLocked = true;
+        } else if (screen.lockOrientation) {
+            screen.lockOrientation('landscape');
+            isOrientationLocked = true;
+        } else if (screen.mozLockOrientation) {
+            screen.mozLockOrientation('landscape');
+            isOrientationLocked = true;
+        } else if (screen.msLockOrientation) {
+            screen.msLockOrientation('landscape');
+            isOrientationLocked = true;
+        }
+    } catch (err) {
+        console.debug('Screen orientation lock landscape:', err.message || err);
+    }
+}
+
+/**
+ * Tự động xoay dọc màn hình (Portrait) khi ấn thu nhỏ màn hình / thoát toàn màn hình trên Mobile
+ */
+export async function restorePortrait() {
+    try {
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || 
+            (window.matchMedia && window.matchMedia('(max-width: 1024px) and (pointer: coarse)').matches) ||
+            ('ontouchstart' in window && window.innerWidth <= 1024);
+
+        if (!isMobile && !isOrientationLocked) return;
+
+        // Ép xoay về màn hình dọc trước
+        if (screen.orientation && typeof screen.orientation.lock === 'function') {
+            try {
+                await screen.orientation.lock('portrait');
+            } catch (e) {}
+        }
+
+        // Sau đó giải phóng khóa xoay (unlock) để người dùng tự do xoay máy theo thói quen tự nhiên
+        setTimeout(() => {
+            try {
+                if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+                    screen.orientation.unlock();
+                } else if (screen.unlockOrientation) {
+                    screen.unlockOrientation();
+                } else if (screen.mozUnlockOrientation) {
+                    screen.mozUnlockOrientation();
+                } else if (screen.msUnlockOrientation) {
+                    screen.msUnlockOrientation();
+                }
+            } catch (e) {}
+            isOrientationLocked = false;
+        }, 350);
+    } catch (err) {
+        console.debug('Screen orientation restore portrait:', err.message || err);
+    }
+}
+
+/**
+ * Bật / Tắt chế độ toàn màn hình & tự động xoay màn hình tương ứng
+ */
+export async function togglePlayerFullscreen() {
+    const isFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+    );
+
+    if (isFs) {
+        // Thu nhỏ màn hình -> Tự động xoay dọc lại
+        try {
+            if (document.exitFullscreen) {
+                await document.exitFullscreen().catch(() => {});
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        } catch (e) {}
+        await restorePortrait();
+        updateFullscreenUI(false);
+    } else {
+        // Phóng to toàn màn hình -> Tự động xoay ngang full màn
+        let targetElem = (videoIframe && videoIframe.style.display !== 'none') ? videoIframe : plyrWrapper;
+        if (!targetElem || targetElem.style.display === 'none') {
+            targetElem = document.getElementById('videoWrapper') || videoPlayer;
+        }
+
+        if (targetElem) {
+            const req = targetElem.requestFullscreen || 
+                        targetElem.webkitRequestFullscreen || 
+                        targetElem.mozRequestFullScreen || 
+                        targetElem.msRequestFullscreen;
+            if (req) {
+                try {
+                    await req.call(targetElem);
+                    await lockLandscape();
+                    updateFullscreenUI(true);
+                } catch (e) {
+                    console.debug('requestFullscreen failed:', e);
+                }
+            } else if (videoPlayer && typeof videoPlayer.webkitEnterFullscreen === 'function') {
+                videoPlayer.webkitEnterFullscreen();
+            }
+        }
+    }
+}
+
+/**
+ * Cập nhật giao diện nút Toàn màn hình / Thu nhỏ
+ */
+function updateFullscreenUI(isFullscreen) {
+    const btn = document.getElementById('playerFullscreenBtn');
+    if (!btn) return;
+
+    btn.classList.toggle('is-fullscreen', isFullscreen);
+    const enterIcon = btn.querySelector('.icon-fs-enter');
+    const exitIcon = btn.querySelector('.icon-fs-exit');
+    const textEl = document.getElementById('playerFsBtnText');
+
+    if (enterIcon) enterIcon.style.display = isFullscreen ? 'none' : 'inline-block';
+    if (exitIcon) exitIcon.style.display = isFullscreen ? 'inline-block' : 'none';
+    if (textEl) textEl.innerText = isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình';
+    btn.title = isFullscreen ? 'Thu nhỏ màn hình / Tự xoay dọc' : 'Toàn màn hình / Tự xoay ngang';
+}
+
 export function initPlayer() {
     if (!player && typeof Plyr !== 'undefined' && videoPlayer) {
         player = new Plyr(videoPlayer, {
             controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
             settings: ['quality', 'speed', 'loop']
+        });
+
+        player.on('enterfullscreen', () => {
+            lockLandscape();
+            updateFullscreenUI(true);
+        });
+        player.on('exitfullscreen', () => {
+            restorePortrait();
+            updateFullscreenUI(false);
+        });
+    }
+
+    if (videoPlayer && !videoPlayer._hasFsBound) {
+        videoPlayer._hasFsBound = true;
+        videoPlayer.addEventListener('webkitbeginfullscreen', () => {
+            lockLandscape();
+            updateFullscreenUI(true);
+        });
+        videoPlayer.addEventListener('webkitendfullscreen', () => {
+            restorePortrait();
+            updateFullscreenUI(false);
         });
     }
 
@@ -38,6 +199,39 @@ export function initPlayer() {
             }
         });
     }
+
+    // Gắn sự kiện nút Toàn Màn Hình / Thu Nhỏ trên thanh điều khiển
+    const fsBtn = document.getElementById('playerFullscreenBtn');
+    if (fsBtn && !fsBtn._hasBound) {
+        fsBtn._hasBound = true;
+        fsBtn.addEventListener('click', () => {
+            togglePlayerFullscreen();
+        });
+    }
+
+    // Lắng nghe sự kiện toàn màn hình trên toàn document (bắt cả sự kiện từ embed iframe của nhà cung cấp)
+    if (!document._hasFsListenerBound) {
+        document._hasFsListenerBound = true;
+        const handleFullscreenChange = () => {
+            const isFs = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            );
+            updateFullscreenUI(isFs);
+            if (isFs) {
+                lockLandscape();
+            } else {
+                restorePortrait();
+            }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    }
 }
 
 export function showModal() {
@@ -49,6 +243,16 @@ export function showModal() {
 }
 
 export function hideModal() {
+    // Nếu đang trong chế độ toàn màn hình, thoát ra và xoay dọc lại
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        try {
+            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } catch (e) {}
+    }
+    restorePortrait();
+    updateFullscreenUI(false);
+
     const modal = document.getElementById('videoModal');
     if (!modal) return;
     modal.classList.remove('show');
@@ -59,6 +263,16 @@ export function hideModal() {
 }
 
 export function closeVideo() {
+    // Nếu đang trong chế độ toàn màn hình, thoát ra và xoay dọc lại
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        try {
+            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } catch (e) {}
+    }
+    restorePortrait();
+    updateFullscreenUI(false);
+
     hideModal();
     isWatchMode = false;
     const previewBanner = document.getElementById('theaterPreviewBanner');
@@ -358,7 +572,7 @@ export async function playMovie(slug, source = CONFIG.SOURCE_NAME, resumeEp = nu
         content.style.display = 'grid';
 
         // Gọi dữ liệu từ TMDB để bổ sung Backdrop 4K, Điểm TMDB, Trailer YouTube, Diễn viên kèm ảnh và Phim tương tự
-        loadTMDBEnrichment(movieDetail.name, originalName, movieDetail.year);
+        loadTMDBEnrichment(movieDetail, originalName);
 
         const serverContainer = document.getElementById('serverContainer');
         if (globalMovieEpisodes.length > 0) {
@@ -636,7 +850,7 @@ function updateQuickEpisodeNav(index, serverData) {
 }
 
 // Làm giàu dữ liệu thông tin phim từ TMDB
-async function loadTMDBEnrichment(title, originalTitle, year) {
+async function loadTMDBEnrichment(movieDetail, originalTitle = "") {
     const tmdbPill = document.getElementById('detailTmdbRating');
     const trailerBtn = document.getElementById('modalTrailerBtn');
     const castSection = document.getElementById('tmdbCastSection');
@@ -650,7 +864,20 @@ async function loadTMDBEnrichment(title, originalTitle, year) {
     if (similarSection) similarSection.style.display = 'none';
 
     try {
-        const tmdb = await getTMDBDetails(title, originalTitle, year);
+        const isObj = typeof movieDetail === 'object' && movieDetail !== null;
+        const title = isObj ? movieDetail.name : movieDetail;
+        const origTitle = isObj ? (originalTitle || movieDetail.original_name || movieDetail.origin_name || "") : (originalTitle || "");
+        const year = isObj ? movieDetail.year : "";
+
+        const tmdb = await getTMDBDetails({
+            title: title,
+            originalTitle: origTitle,
+            year: year,
+            tmdb: isObj ? movieDetail.tmdb : null,
+            imdb: isObj ? movieDetail.imdb : null,
+            type: isObj ? movieDetail.type : null,
+            episodes: globalMovieEpisodes
+        });
         if (!tmdb) return;
         currentTMDBData = tmdb;
 
