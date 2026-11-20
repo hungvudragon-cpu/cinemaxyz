@@ -38,6 +38,67 @@ export function initPlayer() {
             }
         });
     }
+
+    // Tự động xoay ngang khi ấn toàn màn hình trên player (embed / Plyr) và tự động xoay dọc khi thu nhỏ
+    if (!document._hasAutoRotateFsBound) {
+        document._hasAutoRotateFsBound = true;
+        const handleFullscreenChange = async () => {
+            const isFs = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            );
+
+            if (isFs) {
+                // Khi ấn nút Fullscreen trên player embed hoặc Plyr -> Tự động xoay ngang
+                try {
+                    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                        await screen.orientation.lock('landscape').catch(() => {
+                            return screen.orientation.lock('landscape-primary').catch(() => {});
+                        });
+                    } else if (screen.lockOrientation) {
+                        screen.lockOrientation('landscape');
+                    } else if (screen.mozLockOrientation) {
+                        screen.mozLockOrientation('landscape');
+                    } else if (screen.msLockOrientation) {
+                        screen.msLockOrientation('landscape');
+                    }
+                } catch (err) {
+                    console.debug('Orientation lock to landscape:', err);
+                }
+            } else {
+                // Khi thu nhỏ màn hình / thoát toàn màn hình -> Tự động xoay dọc trở lại
+                try {
+                    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                        try {
+                            await screen.orientation.lock('portrait');
+                        } catch (e) {}
+                    }
+                    setTimeout(() => {
+                        try {
+                            if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+                                screen.orientation.unlock();
+                            } else if (screen.unlockOrientation) {
+                                screen.unlockOrientation();
+                            } else if (screen.mozUnlockOrientation) {
+                                screen.mozUnlockOrientation();
+                            } else if (screen.msUnlockOrientation) {
+                                screen.msUnlockOrientation();
+                            }
+                        } catch (e) {}
+                    }, 300);
+                } catch (err) {
+                    console.debug('Orientation restore to portrait:', err);
+                }
+            }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    }
 }
 
 export function showModal() {
